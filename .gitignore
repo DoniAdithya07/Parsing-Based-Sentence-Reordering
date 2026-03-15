@@ -1,0 +1,6 @@
+.venv/
+.stanza/
+.nltk_data/
+.tmp/
+__pycache__/
+*.pyc

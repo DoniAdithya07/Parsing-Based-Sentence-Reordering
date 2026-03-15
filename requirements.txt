@@ -1,0 +1,4 @@
+spacy
+stanza
+nltk
+streamlit
