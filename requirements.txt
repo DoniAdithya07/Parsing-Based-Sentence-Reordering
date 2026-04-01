@@ -1,4 +1,4 @@
+flask
 spacy
-stanza
 nltk
-streamlit
+firebase-admin

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About | Parsing-Based Sentence Reordering</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui.css') }}" />
+  </head>
+  <body class="dark with-tube-nav">
+    <nav class="tube-nav">
+      <div class="tube-nav-inner expandable-tabs" data-expandable-tabs>
+        <a class="tube-link" data-route="/" href="{{ url_for('home') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5" /><path d="M5 9.5V20h5v-6h4v6h5V9.5" /></svg></span><span class="tab-label">Home</span></a>
+        <a class="tube-link" data-route="/reorder" href="{{ url_for('reorder') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4" /><path d="M3 7h18" /><path d="M7 21l-4-4 4-4" /><path d="M21 17H3" /></svg></span><span class="tab-label">Reorder</span></a>
+        <span class="tab-separator" aria-hidden="true"></span>
+        <a class="tube-link" data-route="/about" href="{{ url_for('about') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /></svg></span><span class="tab-label">About</span></a>
+        <a class="tube-link" data-route="/examples" href="{{ url_for('examples') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M20 22V5a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 5.5v14" /></svg></span><span class="tab-label">Examples</span></a>
+
+        <div class="auth-section">
+  <div id="user-avatar" class="auth-avatar" aria-hidden="true">U</div>
+  <span id="user-info"></span>
+  <button id="login-btn" class="auth-btn auth-btn-primary" onclick="signInWithGoogle()">Login with Google</button>
+  <button id="logout-btn" class="auth-btn" onclick="logout()" style="display:none;">Logout</button>
+</div>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <section class="about-header reveal">
+        <div class="section-label">About</div>
+        <h1 class="section-title">Why Parsing Is Better</h1>
+        <p class="section-subtitle">Baseline is fast and simple. Parsing is grammar-aware and usually more accurate on sentence flow.</p>
+      </section>
+
+      <section class="about-grid reveal">
+        <article class="about-section card">
+          <h3>Baseline</h3>
+          <ul class="plain-list">
+            <li>Keyword and length-based heuristics</li>
+            <li>Limited understanding of grammar roles</li>
+            <li>Can miss discourse relationships</li>
+          </ul>
+        </article>
+
+        <article class="about-section card">
+          <h3>Parsing-Based</h3>
+          <ul class="plain-list">
+            <li>Grammar-aware sentence analysis</li>
+            <li>Captures subject/verb/object relationships</li>
+            <li>Improved coherence and ordering quality</li>
+          </ul>
+        </article>
+
+        <article class="about-section card workflow-card">
+          <h3>Workflow Diagram</h3>
+          <div class="workflow-strip">
+            <span>Input</span>
+            <span>Parsing</span>
+            <span>Feature Extraction</span>
+            <span>Scoring</span>
+            <span>Output</span>
+          </div>
+        </article>
+
+        <article class="about-section card" id="dataset-note">
+          <h3>Dataset Note</h3>
+          <p>Reuters-21578 is used only as raw text source. The project creates shuffled sentence examples for demonstration and comparison.</p>
+        </article>
+      </section>
+    </main>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+      <script id="firebase-config" type="application/json">{{ firebase_web_config | tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+  </body>
+</html>

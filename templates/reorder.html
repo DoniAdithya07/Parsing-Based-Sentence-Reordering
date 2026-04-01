@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reorder | Parsing-Based Sentence Reordering</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui.css') }}" />
+  </head>
+  <body class="dark with-tube-nav">
+    <nav class="tube-nav">
+      <div class="tube-nav-inner expandable-tabs" data-expandable-tabs>
+        <a class="tube-link" data-route="/" href="{{ url_for('home') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5" /><path d="M5 9.5V20h5v-6h4v6h5V9.5" /></svg></span><span class="tab-label">Home</span></a>
+        <a class="tube-link" data-route="/reorder" href="{{ url_for('reorder') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4" /><path d="M3 7h18" /><path d="M7 21l-4-4 4-4" /><path d="M21 17H3" /></svg></span><span class="tab-label">Reorder</span></a>
+        <span class="tab-separator" aria-hidden="true"></span>
+        <a class="tube-link" data-route="/about" href="{{ url_for('about') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /></svg></span><span class="tab-label">About</span></a>
+        <a class="tube-link" data-route="/examples" href="{{ url_for('examples') }}"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M20 22V5a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 5.5v14" /></svg></span><span class="tab-label">Examples</span></a>
+
+        <div class="auth-section">
+  <div id="user-avatar" class="auth-avatar" aria-hidden="true">U</div>
+  <span id="user-info"></span>
+  <button id="login-btn" class="auth-btn auth-btn-primary" onclick="signInWithGoogle()">Login with Google</button>
+  <button id="logout-btn" class="auth-btn" onclick="logout()" style="display:none;">Logout</button>
+</div>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <section class="reorder-header reveal">
+        <div class="section-label">Live Demo</div>
+        <h1 class="section-title">Visual Comparison Dashboard</h1>
+        <p class="section-subtitle">Run baseline and parsing-based reordering, compare differences, and inspect syntax cards.</p>
+      </section>
+
+      <section class="input-panel card reveal">
+        <div class="card-header">
+          <h2>Input</h2>
+          <p class="helper">Enter at least 3 sentences (one per line or as a paragraph).</p>
+        </div>
+        {% if error %}
+        <p class="error-text">{{ error }}</p>
+        {% endif %}
+
+        <form id="reorder-form" method="POST">
+          <textarea id="input-text" class="field" name="input_text" placeholder="Sentence 1&#10;Sentence 2&#10;Sentence 3&#10;or paste a full paragraph...">{{ input_text }}</textarea>
+          <div class="action-row">
+            <button class="btn" type="submit" name="method" value="baseline">Run Baseline</button>
+            <button class="btn" type="submit" name="method" value="parser">Run Parsing</button>
+            <button class="btn" type="submit" name="method" value="compare">Compare Both</button>
+            <button class="btn ghost" type="button" id="load-sample">Load Sample</button>
+            <button class="btn ghost" type="button" id="load-story">Load Story Example</button>
+            <button class="btn ghost" type="button" id="load-process">Load Process Example</button>
+            <button class="btn ghost" type="button" id="load-technical">Load Technical Example</button>
+            <button class="btn ghost" type="button" id="clear-input">Clear Input</button>
+          </div>
+          <div id="loading-indicator" class="loading">Processing<span class="dots"></span></div>
+          <div id="validation-message" class="validation-msg"></div>
+          <p id="auth-required-msg" class="auth-required-msg" style="display:none;">Please login to use this feature</p>
+        </form>
+        <p class="helper">Reuters-21578 is the raw source text. Shuffled inputs are custom-generated for this demo.</p>
+      </section>
+
+      <section class="compare-grid reveal">
+        <article class="output-card card {% if selected_method == 'baseline' %}active{% endif %}">
+          <div class="output-head">
+            <h3>Baseline Output</h3>
+            <button class="copy-btn" type="button" data-target="baseline-output">Copy Output</button>
+          </div>
+          <textarea id="baseline-output" class="field output-field" readonly placeholder="Output will appear here...">{{ baseline_text }}</textarea>
+          {% if baseline_percent is not none %}
+          <p class="score">Baseline Score: {{ baseline_percent }}%</p>
+          {% endif %}
+        </article>
+
+        <article class="output-card card {% if selected_method == 'parser' %}active{% endif %}">
+          <div class="output-head">
+            <h3>Parsing-Based Output</h3>
+            <button class="copy-btn" type="button" data-target="parsing-output">Copy Output</button>
+          </div>
+          <textarea id="parsing-output" class="field output-field" readonly placeholder="Output will appear here...">{{ parsing_text }}</textarea>
+          {% if parsing_percent is not none %}
+          <p class="score">Parsing Score: {{ parsing_percent }}%</p>
+          {% endif %}
+        </article>
+      </section>
+
+      {% if comparison_rows %}
+      <section class="card reveal comparison-card">
+        <h3>Order Difference View</h3>
+        <p class="helper">Green means position-aligned with parsing reference; red means reordered differently.</p>
+        <div class="compare-rows">
+          {% for row in comparison_rows %}
+          <div class="compare-row">
+            <div class="pos-badge">#{{ row.position }}</div>
+            <div class="compare-cell {% if row.baseline_correct %}correct{% else %}incorrect{% endif %}">
+              <strong>Baseline:</strong> {{ row.baseline or '-' }}
+            </div>
+            <div class="compare-cell {% if row.parsing_correct %}correct{% else %}incorrect{% endif %}">
+              <strong>Parsing:</strong> {{ row.parsing or '-' }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if parse_cards %}
+      <section class="card reveal parse-visuals">
+        <h3>Parsing Logic Preview</h3>
+        <p class="helper">Simple syntax breakdown from spaCy parse output.</p>
+        <div class="parse-grid">
+          {% for item in parse_cards %}
+          <article class="parse-card">
+            <p class="parse-sentence">Sentence: "{{ item.sentence }}"</p>
+            <p><span class="mini-label">Subject</span> {{ item.subject }}</p>
+            <p><span class="mini-label">Verb</span> {{ item.verb }}</p>
+            <p><span class="mini-label">Object</span> {{ item.object }}</p>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </main>
+
+    {% if not error and (baseline_text or parsing_text) %}
+    <script id="run-payload" type="application/json">
+      {{ {
+        "method": selected_method,
+        "input_text": input_text,
+        "baseline_text": baseline_text,
+        "parsing_text": parsing_text,
+        "baseline_score": baseline_score,
+        "parsing_score": parsing_score
+      } | tojson }}
+    </script>
+    {% endif %}
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+      <script id="firebase-config" type="application/json">{{ firebase_web_config | tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+  </body>
+</html>

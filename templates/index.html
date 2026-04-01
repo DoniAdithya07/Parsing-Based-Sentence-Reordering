@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parsing-Based Sentence Reordering</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='hero.css') }}" />
+  </head>
+  <body class="dark with-tube-nav hero-nav">
+    <section class="hero-wrap">
+      <div class="hero-top">
+        <nav class="tube-nav">
+          <div class="tube-nav-inner expandable-tabs" data-expandable-tabs>
+            <a class="tube-link" data-route="/" href="{{ url_for('home') }}" aria-label="Home">
+              <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5" /><path d="M5 9.5V20h5v-6h4v6h5V9.5" /></svg></span>
+              <span class="tab-label">Home</span>
+            </a>
+            <a class="tube-link" data-route="/reorder" href="{{ url_for('reorder') }}" aria-label="Reorder">
+              <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4" /><path d="M3 7h18" /><path d="M7 21l-4-4 4-4" /><path d="M21 17H3" /></svg></span>
+              <span class="tab-label">Reorder</span>
+            </a>
+            <span class="tab-separator" aria-hidden="true"></span>
+            <a class="tube-link" data-route="/about" href="{{ url_for('about') }}" aria-label="About">
+              <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /></svg></span>
+              <span class="tab-label">About</span>
+            </a>
+            <a class="tube-link" data-route="/examples" href="{{ url_for('examples') }}" aria-label="Examples">
+              <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M20 22V5a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 5.5v14" /></svg></span>
+              <span class="tab-label">Examples</span>
+            </a>
+
+            <div class="auth-section">
+  <div id="user-avatar" class="auth-avatar" aria-hidden="true">U</div>
+  <span id="user-info"></span>
+  <button id="login-btn" class="auth-btn auth-btn-primary" onclick="signInWithGoogle()">Login with Google</button>
+  <button id="logout-btn" class="auth-btn" onclick="logout()" style="display:none;">Logout</button>
+</div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="hero-content reveal">
+        <div class="section-label">Parsing-Based Sentence Reordering</div>
+        <h1 class="hero-title" id="typing-title"></h1>
+        <p class="hero-subtitle">Compare baseline vs parsing-based NLP methods</p>
+        <div class="hero-actions">
+          <a class="btn-with-icon" href="{{ url_for('reorder') }}"><span class="btn-with-icon__text">Try Reordering</span><span class="btn-with-icon__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7" /><path d="M9 7h8v8" /></svg></span></a>
+          <a class="btn" href="{{ url_for('examples') }}">View Examples</a>
+        </div>
+      </div>
+      <div class="scroll-indicator">Scroll &darr;</div>
+    </section>
+
+    <section class="feature-section page-shell">
+      <div class="reveal">
+        <div class="section-label">Project Overview</div>
+        <h2 class="section-title">Reorder text with syntax-aware intelligence</h2>
+        <p class="section-subtitle">Understand the methods, Reuters raw text usage, and how syntax-aware ranking improves coherence.</p>
+      </div>
+
+      <div class="feature-grid reveal">
+        <article class="feature-card">
+          <h3>Baseline Method</h3>
+          <p>Keyword and surface-level sentence cues for fast ordering.</p>
+          <a class="feature-link" href="{{ url_for('reorder') }}">Try baseline</a>
+        </article>
+        <article class="feature-card">
+          <h3>Parsing-Based Method</h3>
+          <p>Grammar-aware signals (subject/verb/object) for stronger sequence quality.</p>
+          <a class="feature-link" href="{{ url_for('about') }}">Explore parsing</a>
+        </article>
+        <article class="feature-card">
+          <h3>Dataset Usage</h3>
+          <p>Reuters-21578 is used as raw source text to generate shuffled examples.</p>
+          <a class="feature-link" href="{{ url_for('about') }}">Dataset details</a>
+        </article>
+        <article class="feature-card">
+          <h3>Authentication</h3>
+          <p>Sign in with Google using Firebase to access protected views.</p>
+          <a class="feature-link" href="{{ url_for('reorder') }}">Start now</a>
+        </article>
+      </div>
+    </section>
+    <script src="{{ url_for('static', filename='hero.js') }}"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+      <script id="firebase-config" type="application/json">{{ firebase_web_config | tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='firebase-auth.js') }}"></script>
+  </body>
+</html>
