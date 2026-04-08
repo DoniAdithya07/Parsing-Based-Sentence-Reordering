@@ -14,10 +14,18 @@ def get_spacy_model():
     if _NLP is None:
         try:
             _NLP = spacy.load("en_core_web_sm")
-        except OSError as exc:
-            raise RuntimeError(
-                "spaCy model 'en_core_web_sm' is not installed. Run: python -m spacy download en_core_web_sm"
-            ) from exc
+        except OSError:
+            # Streamlit/serverless environments may miss the packaged model.
+            # Fall back to a blank English pipeline so the app remains usable.
+            try:
+                from spacy.cli import download
+
+                download("en_core_web_sm")
+                _NLP = spacy.load("en_core_web_sm")
+            except Exception:
+                _NLP = spacy.blank("en")
+                if "sentencizer" not in _NLP.pipe_names:
+                    _NLP.add_pipe("sentencizer")
     return _NLP
 
 
