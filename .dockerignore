@@ -1,0 +1,37 @@
+# VCS / metadata
+.git
+.gitignore
+
+# Python cache / env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local runtime artifacts
+instance/
+.tmp/
+*.log
+.coverage
+
+# Local NLP/model caches
+.stanza/
+.nltk_data/
+pytest-cache-files-*/
+
+# Dev/docs/test assets not required in runtime image
+tests/
+docs/
+dataset/
+.github/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
