@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation | Parsing-Based Sentence Reordering{% endblock %}
+
+{% block content %}
+<main class="page-shell">
+  <section class="about-header reveal">
+    <div class="section-label">Documentation</div>
+    <h1 class="section-title">Project Documentation</h1>
+    <p class="section-subtitle">Setup, architecture, usage, and API details for the Parsing-Based Sentence Reordering project.</p>
+  </section>
+
+  <section class="about-grid reveal">
+    <article class="about-section card">
+      <h3>Overview</h3>
+      <ul class="plain-list">
+        <li>Compares baseline and parsing-based sentence reordering methods</li>
+        <li>Uses Reuters-derived shuffled text for demonstration</li>
+        <li>Provides both web UI and REST API interfaces</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Tech Stack</h3>
+      <ul class="plain-list">
+        <li>Backend: Flask (Python)</li>
+        <li>NLP: spaCy + NLTK Reuters corpus helpers</li>
+        <li>Frontend: Jinja templates, vanilla JavaScript, custom CSS</li>
+        <li>Auth: Firebase Google Sign-In integration</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Setup</h3>
+      <p>Install dependencies and start the server:</p>
+      <pre class="code-block">pip install -r requirements.txt
+python app.py</pre>
+      <p class="helper">Optional: configure Firebase environment variables for Google auth.</p>
+    </article>
+
+    <article class="about-section card">
+      <h3>How To Use</h3>
+      <ul class="plain-list">
+        <li>Open <strong>Reorder</strong> page</li>
+        <li>Paste at least 3 sentences</li>
+        <li>Choose <strong>Baseline</strong>, <strong>Parsing</strong>, or <strong>Compare</strong></li>
+        <li>Review output scores and order differences</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>API Endpoints</h3>
+      <ul class="plain-list">
+        <li><strong>POST /api/reorder</strong>: reorder input text</li>
+        <li><strong>GET /api/sample</strong>: fetch random Reuters dataset sample sentences only</li>
+        <li><strong>POST /api/auth/google</strong>: verify Firebase ID token</li>
+        <li><strong>GET /api/auth/status</strong>: current auth session status</li>
+        <li><strong>GET /api/history</strong>: list saved runs</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Methods Summary</h3>
+      <ul class="plain-list">
+        <li><strong>Step 1: Parse Sentence</strong></li>
+        <li>Dependency Parsing (Implemented)</li>
+        <li>Constituency Parsing (Planned)</li>
+        <li><strong>Step 2: Apply Reordering</strong></li>
+        <li>Rule-Based (Implemented)</li>
+        <li>Statistical (Planned)</li>
+        <li>Neural (Planned)</li>
+        <li><strong>Step 3: Generate Output Sentence</strong> (Implemented)</li>
+      </ul>
+    </article>
+  </section>
+</main>
+{% endblock %}

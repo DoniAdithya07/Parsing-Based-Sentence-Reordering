@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import List
 
 from nltk.tokenize import sent_tokenize
@@ -20,7 +21,13 @@ def clean_and_split_sentences(raw_text: str) -> List[str]:
         return sentences
 
     # Otherwise, treat input as paragraph(s) and split into sentences.
-    for sent in sent_tokenize(raw_text):
+    try:
+        tokenized = sent_tokenize(raw_text)
+    except LookupError:
+        # Graceful fallback when punkt is unavailable.
+        tokenized = re.split(r"(?<=[.!?])\s+", raw_text.strip())
+
+    for sent in tokenized:
         cleaned = " ".join(sent.split())
         if cleaned:
             sentences.append(cleaned)

@@ -5,7 +5,7 @@ A mini NLP project that reorders shuffled sentences using a parsing-based approa
 ## Project Overview
 Parsing-Based Sentence Reordering is designed to improve sentence order quality by using syntactic information from dependency parsing. Instead of relying only on surface-level cues, the model analyzes grammatical structure (such as subject, verb, and object relations) to produce more coherent sentence sequences.
 
-The project also provides a user-friendly web UI with pages for home, login/register flow, reorder testing, examples, about, and run history.
+The project also provides a user-friendly web UI with pages for home, reorder testing, examples, about, dataset/docs/guide, and run history.
 
 ## Features
 - Parsing-based sentence reordering using NLP dependency signals
@@ -14,9 +14,9 @@ The project also provides a user-friendly web UI with pages for home, login/regi
 - Parsing logic preview cards (Subject, Verb, Object)
 - REST APIs for sample generation and reordering
 - Web interface with:
-  - Login/Register integration flow (Firebase Authentication)
+  - Google sign-in flow (Firebase Authentication)
   - Reorder dashboard
-  - History page for saved run results
+  - History page for saved run results (server-side persistence)
   - Example and About pages
 - Reuters-based sample sentence sourcing (Reuters-21578 text corpus)
 
@@ -47,6 +47,23 @@ The parsing-based approach follows these stages:
 
 This makes the model more grammar-aware and generally more coherent than simple heuristic ordering.
 
+
+## Pipeline Roadmap
+```text
+Parsing-Based Sentence Reordering
+|
+|-- Step 1: Parse Sentence
+|   |-- Dependency Parsing (Implemented)
+|   `-- Constituency Parsing (Planned)
+|
+|-- Step 2: Apply Reordering
+|   |-- Rule-Based (Implemented)
+|   |-- Statistical (Planned)
+|   `-- Neural (Planned)
+|
+`-- Step 3: Generate Output Sentence (Implemented)
+```
+
 ## Dataset
 - **Reuters-21578** is used as a raw text source for generating sample inputs.
 - Sentences are cleaned and shuffled for demonstration.
@@ -57,13 +74,19 @@ This makes the model more grammar-aware and generally more coherent than simple 
 Parsing-Based Sentence/
 |-- app.py
 |-- baseline.py
-|-- parser_model.py
-|-- preprocess.py
 |-- data_loader.py
 |-- evaluate.py
+|-- parser_model.py
+|-- preprocess.py
 |-- requirements.txt
 |-- templates/
 |-- static/
+|-- tests/
+|-- docs/
+|   |-- specs/
+|   |   `-- product_specification.md
+|   `-- testing/
+|       `-- testsprite/
 `-- README.md
 ```
 
@@ -127,10 +150,23 @@ Open in browser:
 - Parsing Logic Preview
 
 ## API Endpoints (Optional for Demo)
-- `GET /api/sample` - returns random sample sentences
+- `GET /api/sample` - returns random Reuters dataset sample sentences only
 - `POST /api/reorder` - returns reordered output using `baseline`, `parser`, or `compare`
 - `POST /api/auth/google` - verifies Firebase Google ID token
 - `GET /api/auth/status` - returns current authentication state
+- `POST /api/auth/logout` - clears backend session
+- `GET /api/history` - list run history for current account/session
+- `POST /api/history` - save a run result
+- `DELETE /api/history/<id>` - delete one history item
+- `DELETE /api/history` - clear all history for current account/session
+
+## Testing
+Run tests locally:
+```bash
+pytest -q
+```
+
+CI runs automatically on push and pull requests via GitHub Actions (`.github/workflows/ci.yml`).
 
 ## Screenshots
 Add screenshots in a `docs/screenshots/` folder and update paths below.

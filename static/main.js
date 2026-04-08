@@ -1,30 +1,13 @@
-const HISTORY_KEY = "reorder_run_history_v1";
-
-const EXAMPLE_TEXTS = {
-  story: [
-    "Finally, the villagers celebrated in the square.",
-    "First, a heavy storm blocked the main road.",
-    "Then, volunteers cleared fallen trees overnight.",
-  ].join("\n"),
-  process: [
-    "Finally, the model predictions are displayed to the user.",
-    "First, the input text is cleaned and split into sentences.",
-    "Then, each sentence is parsed for syntax-aware features.",
-  ].join("\n"),
-  technical: [
-    "Finally, the API returns JSON with ordered outputs.",
-    "First, the request payload is validated by the backend.",
-    "Then, baseline and parser methods compute ranking scores.",
-  ].join("\n"),
-};
+const HISTORY_API = "/api/history";
 
 document.addEventListener("DOMContentLoaded", () => {
   setupActiveNav();
   setupScrollReveal();
   setupReorderForm();
   setupCopyButtons();
-  saveRunPayloadToHistory();
-  setupHistoryPage();
+  setupReorderFlowGraph();
+  void saveRunPayloadToHistory();
+  void setupHistoryPage();
 });
 
 function setupActiveNav() {
@@ -95,15 +78,6 @@ function setupReorderForm() {
   const validation = document.getElementById("validation-message");
   const loadSampleBtn = document.getElementById("load-sample");
   const clearBtn = document.getElementById("clear-input");
-  const storyBtn = document.getElementById("load-story");
-  const processBtn = document.getElementById("load-process");
-  const technicalBtn = document.getElementById("load-technical");
-
-  const fallbackSample = [
-    "said . The deal is on track , officials",
-    "after the update . markets reacted quickly",
-    "investors welcomed the decision , analysts said",
-  ].join("\n");
 
   if (loadSampleBtn && textarea) {
     loadSampleBtn.addEventListener("click", async () => {
@@ -120,14 +94,12 @@ function setupReorderForm() {
         const payload = await readJsonResponse(response);
         if (payload && typeof payload.text === "string" && payload.text.trim()) {
           textarea.value = payload.text;
-          if (validation) validation.textContent = "";
+          if (validation) validation.textContent = "Loaded Reuters dataset sample.";
         } else {
-          textarea.value = fallbackSample;
-          if (validation) validation.textContent = "Sample API returned empty data, fallback loaded.";
+          if (validation) validation.textContent = "Dataset sample is unavailable right now.";
         }
       } catch (error) {
-        textarea.value = fallbackSample;
-        if (validation) validation.textContent = `Could not load sample: ${error.message}`;
+        if (validation) validation.textContent = `Could not load Reuters dataset sample: ${error.message}`;
       } finally {
         loadSampleBtn.textContent = original;
         loadSampleBtn.disabled = false;
@@ -138,9 +110,6 @@ function setupReorderForm() {
     });
   }
 
-  bindExampleButton(storyBtn, textarea, validation, EXAMPLE_TEXTS.story);
-  bindExampleButton(processBtn, textarea, validation, EXAMPLE_TEXTS.process);
-  bindExampleButton(technicalBtn, textarea, validation, EXAMPLE_TEXTS.technical);
 
   if (clearBtn && textarea) {
     clearBtn.addEventListener("click", () => {
@@ -177,15 +146,6 @@ function setupReorderForm() {
   });
 }
 
-function bindExampleButton(button, textarea, validation, sampleText) {
-  if (!button || !textarea) return;
-  button.addEventListener("click", () => {
-    textarea.value = sampleText;
-    textarea.focus();
-    if (validation) validation.textContent = "Example loaded.";
-  });
-}
-
 async function readJsonResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   const rawText = await response.text();
@@ -215,6 +175,11 @@ async function readJsonResponse(response) {
   } catch (_error) {
     throw new Error("Invalid JSON in API response.");
   }
+}
+
+async function requestJson(url, options) {
+  const response = await fetch(url, options);
+  return readJsonResponse(response);
 }
 
 function setupCopyButtons() {
@@ -249,21 +214,279 @@ function setupCopyButtons() {
   });
 }
 
-function readHistory() {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (_error) {
-    return [];
+function setupReorderFlowGraph() {
+  const mount = document.getElementById("reorder-graph-mount");
+  if (!mount) return;
+
+  const payloadNode = document.getElementById("run-payload");
+  if (!payloadNode) {
+    mount.innerHTML = '<div class="graph-empty">Run a method to see sentence movement graph.</div>';
+    return;
   }
+
+  let payload = null;
+  try {
+    payload = JSON.parse(payloadNode.textContent || "{}");
+  } catch (_error) {
+    mount.innerHTML = '<div class="graph-empty">Could not parse run payload for graph rendering.</div>';
+    return;
+  }
+
+  const inputSentences = splitSentences(payload.input_text || "");
+  const baselineSentences = splitSentences(payload.baseline_text || "");
+  const parsingSentences = splitSentences(payload.parsing_text || "");
+
+  if (!inputSentences.length || (!baselineSentences.length && !parsingSentences.length)) {
+    mount.innerHTML = '<div class="graph-empty">Graph will appear when output is generated.</div>';
+    return;
+  }
+
+  renderReorderFlowSvg(mount, inputSentences, baselineSentences, parsingSentences);
 }
 
-function writeHistory(items) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 40)));
+function splitSentences(rawText) {
+  return String(rawText || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
-function saveRunPayloadToHistory() {
+function mapInputToOutput(inputSentences, outputSentences) {
+  const buckets = new Map();
+  outputSentences.forEach((sentence, index) => {
+    if (!buckets.has(sentence)) buckets.set(sentence, []);
+    buckets.get(sentence).push(index);
+  });
+
+  return inputSentences.map((sentence) => {
+    const queue = buckets.get(sentence);
+    if (!queue || !queue.length) return -1;
+    return queue.shift();
+  });
+}
+
+function renderReorderFlowSvg(mount, inputSentences, baselineSentences, parsingSentences) {
+  mount.innerHTML = "";
+
+  const baselineMap = mapInputToOutput(inputSentences, baselineSentences);
+  const parsingMap = mapInputToOutput(inputSentences, parsingSentences);
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const rowCount = Math.max(inputSentences.length, baselineSentences.length, parsingSentences.length, 1);
+  const svgWidth = 980;
+  const rowHeight = 52;
+  const nodeHeight = 36;
+  const topPadding = 62;
+  const bottomPadding = 28;
+  const svgHeight = topPadding + rowCount * rowHeight + bottomPadding;
+
+  const inputX = 24;
+  const baselineX = 360;
+  const parsingX = 696;
+  const nodeWidth = 260;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Sentence arrangement flow graph");
+
+  const bg = document.createElementNS(svgNS, "rect");
+  bg.setAttribute("x", "0");
+  bg.setAttribute("y", "0");
+  bg.setAttribute("width", String(svgWidth));
+  bg.setAttribute("height", String(svgHeight));
+  bg.setAttribute("fill", "rgba(255,255,255,0.01)");
+  svg.appendChild(bg);
+
+  drawColumnHeading(svg, svgNS, inputX, 34, "Input Order");
+  drawColumnHeading(svg, svgNS, baselineX, 34, "Baseline Output");
+  drawColumnHeading(svg, svgNS, parsingX, 34, "Parsing Output");
+
+  const centerY = (index) => topPadding + index * rowHeight + nodeHeight / 2;
+  const curveX1 = inputX + nodeWidth + 70;
+  const curveX2 = baselineX - 70;
+  const curveX3 = parsingX - 70;
+
+  baselineMap.forEach((mappedIndex, inputIndex) => {
+    if (mappedIndex < 0) return;
+    const path = document.createElementNS(svgNS, "path");
+    const y1 = centerY(inputIndex);
+    const y2 = centerY(mappedIndex);
+    path.setAttribute(
+      "d",
+      `M ${inputX + nodeWidth} ${y1} C ${curveX1} ${y1}, ${curveX2} ${y2}, ${baselineX} ${y2}`
+    );
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "rgba(147, 197, 253, 0.72)");
+    path.setAttribute("stroke-width", "2.2");
+    path.setAttribute("stroke-linecap", "round");
+    svg.appendChild(path);
+  });
+
+  parsingMap.forEach((mappedIndex, inputIndex) => {
+    if (mappedIndex < 0) return;
+    const path = document.createElementNS(svgNS, "path");
+    const y1 = centerY(inputIndex);
+    const y2 = centerY(mappedIndex);
+    path.setAttribute(
+      "d",
+      `M ${inputX + nodeWidth} ${y1} C ${curveX1} ${y1}, ${curveX3} ${y2}, ${parsingX} ${y2}`
+    );
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "rgba(52, 211, 153, 0.72)");
+    path.setAttribute("stroke-width", "2.2");
+    path.setAttribute("stroke-linecap", "round");
+    svg.appendChild(path);
+  });
+
+  drawSentenceColumn(
+    svg,
+    svgNS,
+    inputX,
+    nodeWidth,
+    nodeHeight,
+    topPadding,
+    rowHeight,
+    inputSentences,
+    "rgba(147, 197, 253, 0.22)",
+    "rgba(147, 197, 253, 0.42)"
+  );
+  drawSentenceColumn(
+    svg,
+    svgNS,
+    baselineX,
+    nodeWidth,
+    nodeHeight,
+    topPadding,
+    rowHeight,
+    baselineSentences,
+    "rgba(59, 130, 246, 0.18)",
+    "rgba(147, 197, 253, 0.34)"
+  );
+  drawSentenceColumn(
+    svg,
+    svgNS,
+    parsingX,
+    nodeWidth,
+    nodeHeight,
+    topPadding,
+    rowHeight,
+    parsingSentences,
+    "rgba(16, 185, 129, 0.16)",
+    "rgba(52, 211, 153, 0.34)"
+  );
+
+  if (!baselineSentences.length) {
+    drawNoOutputLabel(svg, svgNS, baselineX + nodeWidth / 2, topPadding + 18, "No baseline output");
+  }
+  if (!parsingSentences.length) {
+    drawNoOutputLabel(svg, svgNS, parsingX + nodeWidth / 2, topPadding + 18, "No parsing output");
+  }
+
+  mount.appendChild(svg);
+}
+
+function drawColumnHeading(svg, svgNS, x, y, label) {
+  const heading = document.createElementNS(svgNS, "text");
+  heading.setAttribute("x", String(x + 2));
+  heading.setAttribute("y", String(y));
+  heading.setAttribute("fill", "rgba(255,255,255,0.82)");
+  heading.setAttribute("font-size", "13");
+  heading.setAttribute("font-family", "Segoe UI, Arial, sans-serif");
+  heading.setAttribute("font-weight", "600");
+  heading.textContent = label;
+  svg.appendChild(heading);
+}
+
+function drawNoOutputLabel(svg, svgNS, x, y, label) {
+  const text = document.createElementNS(svgNS, "text");
+  text.setAttribute("x", String(x));
+  text.setAttribute("y", String(y));
+  text.setAttribute("fill", "rgba(255,255,255,0.5)");
+  text.setAttribute("font-size", "12");
+  text.setAttribute("font-family", "Segoe UI, Arial, sans-serif");
+  text.setAttribute("text-anchor", "middle");
+  text.textContent = label;
+  svg.appendChild(text);
+}
+
+function drawSentenceColumn(svg, svgNS, x, width, height, topPadding, rowHeight, sentences, fillColor, strokeColor) {
+  sentences.forEach((sentence, index) => {
+    const y = topPadding + index * rowHeight;
+
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", String(x));
+    rect.setAttribute("y", String(y));
+    rect.setAttribute("rx", "9");
+    rect.setAttribute("ry", "9");
+    rect.setAttribute("width", String(width));
+    rect.setAttribute("height", String(height));
+    rect.setAttribute("fill", fillColor);
+    rect.setAttribute("stroke", strokeColor);
+    rect.setAttribute("stroke-width", "1");
+    svg.appendChild(rect);
+
+    const indexText = document.createElementNS(svgNS, "text");
+    indexText.setAttribute("x", String(x + 10));
+    indexText.setAttribute("y", String(y + 23));
+    indexText.setAttribute("fill", "rgba(255,255,255,0.84)");
+    indexText.setAttribute("font-size", "12");
+    indexText.setAttribute("font-family", "Segoe UI, Arial, sans-serif");
+    indexText.setAttribute("font-weight", "600");
+    indexText.textContent = `#${index + 1}`;
+    svg.appendChild(indexText);
+
+    const sentenceText = document.createElementNS(svgNS, "text");
+    sentenceText.setAttribute("x", String(x + 44));
+    sentenceText.setAttribute("y", String(y + 23));
+    sentenceText.setAttribute("fill", "rgba(255,255,255,0.74)");
+    sentenceText.setAttribute("font-size", "12");
+    sentenceText.setAttribute("font-family", "Segoe UI, Arial, sans-serif");
+    sentenceText.textContent = truncateSentence(sentence, 32);
+    svg.appendChild(sentenceText);
+  });
+}
+
+function truncateSentence(sentence, limit) {
+  const text = String(sentence || "").replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 1)}...`;
+}
+
+async function loadHistoryItems(limit = 40) {
+  const payload = await requestJson(`${HISTORY_API}?limit=${encodeURIComponent(String(limit))}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
+async function createHistoryItem(record) {
+  await requestJson(HISTORY_API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(record),
+  });
+}
+
+async function deleteHistoryItem(id) {
+  await requestJson(`${HISTORY_API}/${encodeURIComponent(String(id))}`, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+  });
+}
+
+async function clearHistoryItems() {
+  await requestJson(HISTORY_API, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+  });
+}
+
+async function saveRunPayloadToHistory() {
   const payloadNode = document.getElementById("run-payload");
   if (!payloadNode) return;
 
@@ -276,7 +499,6 @@ function saveRunPayloadToHistory() {
     };
 
     const record = {
-      ts: Date.now(),
       method: payload.method || "compare",
       method_label: methodLabelMap[payload.method] || "Run",
       input_text: payload.input_text || "",
@@ -288,8 +510,8 @@ function saveRunPayloadToHistory() {
 
     if (!record.input_text.trim()) return;
 
-    const items = readHistory();
-    const last = items[0];
+    const latest = await loadHistoryItems(1);
+    const last = latest[0];
     const isDuplicate =
       last &&
       last.method === record.method &&
@@ -298,15 +520,14 @@ function saveRunPayloadToHistory() {
       last.parsing_text === record.parsing_text;
 
     if (!isDuplicate) {
-      items.unshift(record);
-      writeHistory(items);
+      await createHistoryItem(record);
     }
   } catch (_error) {
-    // Ignore malformed payload.
+    // Ignore malformed payload and network failures on non-history pages.
   }
 }
 
-function setupHistoryPage() {
+async function setupHistoryPage() {
   const historyList = document.getElementById("history-list");
   if (!historyList) return;
 
@@ -321,15 +542,24 @@ function setupHistoryPage() {
       .replaceAll("'", "&#39;");
   }
 
-  function render() {
-    const items = readHistory();
+  async function render() {
+    historyList.innerHTML = '<div class="history-empty">Loading history...</div>';
+
+    let items = [];
+    try {
+      items = await loadHistoryItems();
+    } catch (error) {
+      historyList.innerHTML = `<div class="history-empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
     if (!items.length) {
-      historyList.innerHTML = '<div class="history-empty">No runs yet. Use Reorder page buttons to generate outputs.</div>';
+      historyList.innerHTML = '<div class="history-empty">No runs yet. Use the Reorder page to generate outputs.</div>';
       return;
     }
 
     historyList.innerHTML = items
-      .map((item, index) => {
+      .map((item) => {
         const when = new Date(item.ts).toLocaleString();
         const baseline = item.baseline_text
           ? `<div class="history-block"><span class="mini-label">Baseline</span><pre>${escapeHtml(item.baseline_text)}</pre></div>`
@@ -347,7 +577,7 @@ function setupHistoryPage() {
         return `
           <article class="history-item card">
             <div class="history-item-head">
-              <strong>${escapeHtml(item.method_label)}</strong>
+              <strong>${escapeHtml(item.method_label || "Run")}</strong>
               <span class="history-time">${escapeHtml(when)}</span>
             </div>
             <div class="history-block">
@@ -357,30 +587,37 @@ function setupHistoryPage() {
             ${baseline}
             ${parsing}
             ${scores ? `<p class="score">${escapeHtml(scores)}</p>` : ""}
-            <button class="copy-btn history-remove" type="button" data-index="${index}">Remove</button>
+            <button class="copy-btn history-remove" type="button" data-id="${escapeHtml(item.id)}">Remove</button>
           </article>
         `;
       })
       .join("");
 
     historyList.querySelectorAll(".history-remove").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = Number(btn.getAttribute("data-index"));
-        if (Number.isNaN(idx)) return;
-        const items = readHistory();
-        items.splice(idx, 1);
-        writeHistory(items);
-        render();
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
+
+        try {
+          await deleteHistoryItem(id);
+          await render();
+        } catch (error) {
+          alert(`Could not remove item: ${error.message}`);
+        }
       });
     });
   }
 
   if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      localStorage.removeItem(HISTORY_KEY);
-      render();
+    clearBtn.addEventListener("click", async () => {
+      try {
+        await clearHistoryItems();
+        await render();
+      } catch (error) {
+        alert(`Could not clear history: ${error.message}`);
+      }
     });
   }
 
-  render();
+  await render();
 }

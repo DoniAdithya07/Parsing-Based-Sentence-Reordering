@@ -1,0 +1,63 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Dataset | Parsing-Based Sentence Reordering{% endblock %}
+
+{% block content %}
+<main class="page-shell">
+  <section class="about-header reveal">
+    <div class="section-label">Dataset</div>
+    <h1 class="section-title">Reuters-21578 Usage</h1>
+    <p class="section-subtitle">How the project uses Reuters text safely for sentence reordering experiments.</p>
+  </section>
+
+  <section class="about-grid reveal">
+    <article class="about-section card">
+      <h3>Source</h3>
+      <ul class="plain-list">
+        <li>Corpus: Reuters-21578 (via NLTK helper)</li>
+        <li>Content type: raw sentence text only</li>
+        <li>No labels from the original dataset are used in this demo</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>How It Is Used</h3>
+      <ul class="plain-list">
+        <li>Sentences are sampled and shuffled for demo inputs</li>
+        <li>Users compare baseline vs parsing-based ordering output</li>
+        <li>The app can also return random text samples from the corpus</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Quality Notes</h3>
+      <ul class="plain-list">
+        <li>Short and clean sentence sets produce clearer comparisons</li>
+        <li>Highly domain-specific terms may reduce baseline accuracy</li>
+        <li>Parsing-based method usually improves coherence</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Limitations</h3>
+      <ul class="plain-list">
+        <li>This is a research/demo workflow, not a production benchmark</li>
+        <li>Random sampling can produce variable difficulty across runs</li>
+        <li>Language support is currently focused on English text</li>
+      </ul>
+    </article>
+
+    <article class="about-section card">
+      <h3>Dataset Summary</h3>
+      <p>Your dataset is Reuters-21578 (news articles), loaded through NLTK.</p>
+      <ul class="plain-list">
+        <li>Total documents: 10,788</li>
+        <li>Categories/topics: 90 (like earn, acq, trade, crude, etc.)</li>
+        <li>Standard split in Reuters corpus:</li>
+        <li>Training: 7,769</li>
+        <li>Test: 3,019</li>
+      </ul>
+    </article>
+  </section>
+</main>
+{% endblock %}

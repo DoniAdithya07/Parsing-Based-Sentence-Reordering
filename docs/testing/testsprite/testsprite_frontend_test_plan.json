@@ -1,0 +1,328 @@
+[
+  {
+    "id": "TC001",
+    "title": "Home page shows unauthenticated state and sign-in entry point",
+    "description": "Verifies the home page loads and indicates the user is not authenticated before any sign-in action.",
+    "category": "User Authentication",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an unauthenticated state is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Login page loads and offers Google sign-in action",
+    "description": "Verifies the login page loads its primary content and provides a way to initiate Google sign-in.",
+    "category": "User Authentication",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a Google sign-in action is available"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Initiate Google sign-in from login page (in-app start)",
+    "description": "Verifies that starting the Google sign-in flow triggers an authentication-in-progress state from the UI perspective.",
+    "category": "User Authentication",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Click the Google sign-in button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the app shows an authentication-in-progress state"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Logout from home returns to unauthenticated state (when available)",
+    "description": "Verifies that if the UI exposes logout, using it returns the app to an unauthenticated state.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the logout control if it is available"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an unauthenticated state is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Canceling or failing sign-in shows an authentication error on login page",
+    "description": "Verifies that an authentication attempt that does not complete results in an error message shown on the login page.",
+    "category": "User Authentication",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Click the Google sign-in button"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the authentication attempt to complete or return to the app"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an authentication error message is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Reorder page loads primary input and run controls",
+    "description": "Verifies the main reorder tool page loads with the text input area and actions to run models.",
+    "category": "Sentence Reordering",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a text input area for reordering is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify controls to run reordering are displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Run parsing reordering end-to-end and display results",
+    "description": "Verifies submitting text for parsing reordering produces visible result outputs on the page.",
+    "category": "Sentence Reordering",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Fill sample text into the reordering input"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to run parsing reordering"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify reordering results are displayed as a table and cards"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Run baseline reordering end-to-end and display results",
+    "description": "Verifies submitting text for baseline reordering produces visible result outputs on the page.",
+    "category": "Sentence Reordering",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Fill sample text into the reordering input"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to run baseline reordering"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify baseline results are displayed as a table and cards"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Load an example, compare both models, and show side-by-side outputs",
+    "description": "Verifies loading an example populates the input and comparing both models displays both outputs for comparison.",
+    "category": "Sentence Reordering",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to load an example text"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the reordering input is populated with example text"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to compare both models"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify side-by-side comparison outputs are displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Submitting empty text shows input validation error",
+    "description": "Verifies the UI prevents or reports invalid submission when the input is empty.",
+    "category": "Sentence Reordering",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Fill empty text into the reordering input"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to run reordering"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an input validation error is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "History page loads and displays run list or empty state",
+    "description": "Verifies the history page loads and renders either a populated table or an empty state message.",
+    "category": "Run History",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /history"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the run history table is displayed or an empty history state is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Create a run from reorder page and see it appear in history",
+    "description": "Verifies completing a reorder run results in a new entry that is visible when navigating to the history page.",
+    "category": "Run History",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Fill uniquely identifiable text into the reordering input"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to run reordering"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to view run history"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a run entry containing the uniquely identifiable text is displayed in history"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Delete a specific run from history and confirm it is removed",
+    "description": "Verifies deleting an item removes it from the history list in the UI.",
+    "category": "Run History",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reorder"
+      },
+      {
+        "type": "action",
+        "description": "Fill uniquely identifiable text into the reordering input"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to run reordering"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to view run history"
+      },
+      {
+        "type": "action",
+        "description": "Click delete for the run entry containing the uniquely identifiable text"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the run entry containing the uniquely identifiable text is no longer displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Clear full history and confirm empty state",
+    "description": "Verifies clearing history removes all run entries and shows an empty state.",
+    "category": "Run History",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /history"
+      },
+      {
+        "type": "action",
+        "description": "Click the clear history control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty history state is displayed"
+      }
+    ]
+  }
+]

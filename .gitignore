@@ -5,3 +5,10 @@
 __pycache__/
 *.pyc
 outputs/
+instance/
+.pytest_cache/
+pytest-cache-files-*/
+.DS_Store
+*.log
+.coverage
+.mypy_cache/

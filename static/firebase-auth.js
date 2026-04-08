@@ -14,16 +14,7 @@ import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10
 
 let auth = null;
 let isSigningIn = false;
-
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAm-MM0bHIpMf2cv0AlCYrRLM8CjRPYVr4",
-  authDomain: "parsing-based-sentence.firebaseapp.com",
-  projectId: "parsing-based-sentence",
-  storageBucket: "parsing-based-sentence.firebasestorage.app",
-  messagingSenderId: "1024287457881",
-  appId: "1:1024287457881:web:6ccf038e021c7cd6bc6748",
-  measurementId: "G-E73J28BK20",
-};
+let backendSessionEmail = "";
 
 const REQUIRED_AUTH_CONFIG_FIELDS = ["apiKey", "authDomain", "projectId", "appId"];
 const OPTIONAL_CONFIG_FIELDS = ["storageBucket", "messagingSenderId"];
@@ -47,18 +38,32 @@ function readFirebaseConfig() {
         }
         return cfg;
       }
-      console.warn("Template Firebase config invalid. Using fallback config.");
+      console.warn("Template Firebase config invalid.");
     } catch (error) {
       console.error("Failed to parse template Firebase config:", error);
     }
   }
 
-  if (isValidAuthConfig(DEFAULT_FIREBASE_CONFIG)) {
-    return DEFAULT_FIREBASE_CONFIG;
-  }
-
-  console.error("No valid Firebase config available.");
+  console.info("Firebase config not available. Auth will stay in guest mode.");
   return null;
+}
+
+async function postJson(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body || {}),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMessage = payload && payload.error ? payload.error : `Request failed (${response.status})`;
+    throw new Error(errorMessage);
+  }
+  return payload;
 }
 
 function ensureToastContainer() {
@@ -207,9 +212,17 @@ function shouldFallbackToRedirect(error) {
   return error && ["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(error.code);
 }
 
+function isBackendAuthOptionalError(error) {
+  const message = String((error && error.message) || "").toLowerCase();
+  return (
+    message.includes("firebase admin is not configured") ||
+    message.includes("firebase-admin is not installed")
+  );
+}
+
 async function signInWithGoogle() {
   if (!auth) {
-    showToast("Firebase config missing", "error");
+    showToast("Google login is unavailable in this environment.");
     return;
   }
   if (isSigningIn) return;
@@ -222,7 +235,6 @@ async function signInWithGoogle() {
 
   try {
     await signInWithPopup(auth, provider);
-    showToast("Logged in successfully", "success");
   } catch (error) {
     console.error("Google sign-in failed:", error.code, error.message);
 
@@ -247,6 +259,8 @@ async function logout() {
 
   try {
     await signOut(auth);
+    await postJson("/api/auth/logout", {});
+    backendSessionEmail = "";
     showToast("Logged out", "success");
   } catch (error) {
     console.error("Logout failed:", error);
@@ -266,17 +280,42 @@ async function initAnalytics(app) {
   }
 }
 
+async function syncBackendSession(user) {
+  const token = await user.getIdToken();
+  const response = await postJson("/api/auth/google", { idToken: token });
+  const email = response && response.user && response.user.email ? response.user.email : "";
+  backendSessionEmail = String(email || "");
+}
+
 async function initFirebaseAuth() {
   const cfg = readFirebaseConfig();
 
   if (!cfg) {
     const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userInfo = document.getElementById("user-info");
+    const avatar = document.getElementById("user-avatar");
+
     if (loginBtn) {
       loginBtn.disabled = true;
-      loginBtn.title = "Firebase config missing";
+      loginBtn.textContent = "Guest Mode";
+      loginBtn.title = "Firebase auth is not configured";
+      loginBtn.classList.add("auth-disabled");
     }
+    if (logoutBtn) {
+      logoutBtn.style.display = "none";
+    }
+    if (userInfo) {
+      userInfo.textContent = "Guest";
+    }
+    if (avatar) {
+      avatar.textContent = "U";
+      avatar.style.backgroundImage = "none";
+      avatar.classList.remove("has-photo");
+      avatar.title = "Guest mode";
+    }
+
     setGuestMode(true);
-    showToast("Firebase config missing. Running in guest mode.", "error");
     return;
   }
 
@@ -301,7 +340,27 @@ async function initFirebaseAuth() {
     showToast(mapAuthErrorToMessage(error), "error");
   }
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        await syncBackendSession(user);
+      } catch (error) {
+        if (isBackendAuthOptionalError(error)) {
+          console.warn("Backend Firebase admin is not configured. Continuing with client-side login only.");
+        } else {
+          console.error("Backend session sync failed:", error);
+          showToast(error.message || "Failed to sync login state with server", "error");
+        }
+      }
+    } else if (backendSessionEmail) {
+      backendSessionEmail = "";
+      try {
+        await postJson("/api/auth/logout", {});
+      } catch (_error) {
+        // Ignore logout sync issues.
+      }
+    }
+
     updateAuthUI(user);
   });
 }
@@ -313,3 +372,4 @@ window.showToast = showToast;
 document.addEventListener("DOMContentLoaded", () => {
   initFirebaseAuth();
 });
+
