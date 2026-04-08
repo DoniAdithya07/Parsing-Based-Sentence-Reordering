@@ -16,11 +16,11 @@ def client():
         "/",
         "/reorder",
         "/about",
-        "/examples",
         "/history",
         "/dataset",
         "/documentation",
         "/guide",
+        "/presentation",
     ],
 )
 def test_page_layout_contains_shared_shell(client, path):

@@ -1,4 +1,4 @@
-﻿import shutil
+import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -27,7 +27,7 @@ def client(monkeypatch):
 
 
 def test_main_routes_return_ok(client):
-    for path in ["/", "/reorder", "/about", "/examples", "/history", "/dataset", "/documentation", "/guide"]:
+    for path in ["/", "/reorder", "/about", "/history", "/dataset", "/documentation", "/guide", "/presentation"]:
         resp = client.get(path)
         assert resp.status_code == 200
 
@@ -105,3 +105,5 @@ def test_api_auth_status_guest(client):
     assert resp.status_code == 200
     assert data["authenticated"] is False
     assert data["guest"] is True
+
+

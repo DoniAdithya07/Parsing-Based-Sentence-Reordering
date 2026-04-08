@@ -59,9 +59,20 @@
     </article>
   </section>
 
+  <section class="card reveal analysis-flow-card">
+    <h3>Analysis Flow</h3>
+    <p class="helper">Use this order to understand the result quickly:</p>
+    <ol class="analysis-steps">
+      <li><span class="step-pill">Step 1</span>Read <strong>Input</strong> to see the original sentence order.</li>
+      <li><span class="step-pill">Step 2</span>Compare <strong>Baseline Output</strong> and <strong>Parsing-Based Output</strong>.</li>
+      <li><span class="step-pill">Step 3</span>Check the flow graph lines to track movement of each sentence.</li>
+      <li><span class="step-pill">Step 4</span>Use parsing preview cards to inspect <strong>Subject, Verb, Object</strong> logic.</li>
+    </ol>
+  </section>
+
   <section class="card reveal flow-visualization-card">
-    <h3>Sentence Arrangement Flow</h3>
-    <p class="helper">Graphical view of how each input sentence moves across baseline and parsing outputs.</p>
+    <h3>Sentence Flow Analysis</h3>
+    <p class="helper">Each curve starts from Input and ends at the sentence position chosen by each method.</p>
     <div class="flow-legend">
       <span class="legend-item"><span class="legend-dot baseline"></span>Baseline path</span>
       <span class="legend-item"><span class="legend-dot parsing"></span>Parsing path</span>
@@ -69,18 +80,54 @@
     <div id="reorder-graph-mount" class="reorder-graph-mount"></div>
   </section>
 
+  {% if evaluation_rows %}
+  <section class="card reveal evaluation-card">
+    <h3>Evaluation Metrics</h3>
+    <p class="helper">Reference order = your input sequence. Higher is better for Exact Match, PMR, Pairwise Accuracy, and Kendall Tau closer to 1.</p>
+    <div class="eval-table-wrap">
+      <table class="eval-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Baseline</th>
+            <th>Parsing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in evaluation_rows %}
+          <tr>
+            <td>{{ row.metric }}</td>
+            <td>{{ row.baseline }}</td>
+            <td>{{ row.parsing }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
 
   {% if parse_cards %}
   <section class="card reveal parse-visuals">
-    <h3>Parsing Logic Preview</h3>
-    <p class="helper">Simple syntax breakdown from spaCy parse output.</p>
+    <h3>Parsing Logic Preview (Top 3 Sentences)</h3>
+    <p class="helper">This helps explain why parsing-based ordering is chosen. Read each card from Subject to Verb to Object.</p>
     <div class="parse-grid">
       {% for item in parse_cards %}
       <article class="parse-card">
-        <p class="parse-sentence">Sentence: "{{ item.sentence }}"</p>
-        <p><span class="mini-label">Subject</span> {{ item.subject }}</p>
-        <p><span class="mini-label">Verb</span> {{ item.verb }}</p>
-        <p><span class="mini-label">Object</span> {{ item.object }}</p>
+        <p class="parse-card-title">Sentence {{ loop.index }}</p>
+        <p class="parse-sentence">"{{ item.sentence }}"</p>
+        <div class="parse-row">
+          <span class="mini-label">Subject</span>
+          <span class="parse-value">{{ item.subject }}</span>
+        </div>
+        <div class="parse-row">
+          <span class="mini-label">Verb</span>
+          <span class="parse-value">{{ item.verb }}</span>
+        </div>
+        <div class="parse-row">
+          <span class="mini-label">Object</span>
+          <span class="parse-value">{{ item.object }}</span>
+        </div>
       </article>
       {% endfor %}
     </div>

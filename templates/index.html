@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Parsing-Based Sentence Reordering{% endblock %}
 
@@ -16,7 +16,6 @@
     <p class="hero-subtitle">Compare baseline vs parsing-based NLP methods</p>
     <div class="hero-actions">
       <a class="btn-with-icon" href="{{ url_for('reorder') }}"><span class="btn-with-icon__text">Try Reordering</span><span class="btn-with-icon__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7" /><path d="M9 7h8v8" /></svg></span></a>
-      <a class="btn" href="{{ url_for('examples') }}">View Examples</a>
     </div>
   </div>
   <div class="scroll-indicator">Scroll &darr;</div>
@@ -56,5 +55,3 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='hero.js') }}"></script>
 {% endblock %}
-
-

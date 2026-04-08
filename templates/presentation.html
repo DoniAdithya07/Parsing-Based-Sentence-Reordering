@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Presentation | Parsing-Based Sentence Reordering{% endblock %}
+
+{% block content %}
+<main class="page-shell">
+  <section class="about-header reveal">
+    <div class="section-label">Presentation</div>
+    <h1 class="section-title">Project Presentation Notes</h1>
+    <p class="section-subtitle">Ordered content for viva and slides: our project, research paper, and innovation comparison.</p>
+  </section>
+
+  <section class="about-grid reveal">
+    <article class="about-section card workflow-card">
+      <h3>1) About Our Project</h3>
+
+      <h4>1. Project Title</h4>
+      <p>Parsing-Based Sentence Reordering with Baseline Comparison</p>
+
+      <h4>2. What This Project Is</h4>
+      <p>This project is an NLP web application that takes shuffled sentences and rearranges them into a more coherent order. It compares two approaches:</p>
+      <ul class="plain-list">
+        <li>A simple baseline method</li>
+        <li>A parsing-based method (main approach)</li>
+      </ul>
+      <p>It also shows analysis, evaluation metrics, and parsing logic in the website.</p>
+
+      <h4>3. Problem Statement</h4>
+      <p>When sentence order is disturbed, text becomes hard to understand. Many systems (summarization, question answering, content generation) need correct sentence flow.</p>
+      <p><strong>Main problem:</strong> Given unordered sentences, generate a coherent sequence automatically.</p>
+
+      <h4>4. Objective</h4>
+      <ul class="plain-list">
+        <li>Build an end-to-end system for sentence reordering.</li>
+        <li>Compare baseline vs parsing-based output.</li>
+        <li>Measure quality with proper evaluation metrics.</li>
+        <li>Provide an explainable UI for analysis and presentation.</li>
+      </ul>
+
+      <h4>5. Dataset Used</h4>
+      <p>Reuters-21578 (via NLTK/local corpus files)</p>
+      <p><strong>Key facts:</strong></p>
+      <ul class="plain-list">
+        <li>Total documents: 10,788</li>
+        <li>Categories/topics: 90</li>
+        <li>Standard split: 7,769 train / 3,019 test (corpus standard)</li>
+        <li>In our app, Reuters is used as a trusted sentence source for sample/demo inputs.</li>
+      </ul>
+
+      <h4>6. Method Used in Our Project</h4>
+      <h4>6.1 Baseline Method</h4>
+      <ul class="plain-list">
+        <li>Sorts sentences using simple surface logic (length-based ordering).</li>
+        <li>Computes local coherence via adjacent word overlap.</li>
+      </ul>
+
+      <h4>6.2 Parsing-Based Method (Main)</h4>
+      <ul class="plain-list">
+        <li>Uses spaCy dependency parsing (en_core_web_sm).</li>
+        <li>For each sentence, score uses syntax signals:</li>
+        <li>subject count</li>
+        <li>object count</li>
+        <li>root verb presence</li>
+        <li>proper nouns</li>
+        <li>pronoun penalty</li>
+        <li>Scores are normalized, then sentences ranked by score.</li>
+      </ul>
+      <p><strong>Core intuition:</strong> Syntax-aware signals help produce better sentence flow than naive ordering.</p>
+
+      <h4>7. Evaluation Metrics (Shown in Website)</h4>
+      <p>We compare outputs using:</p>
+      <ul class="plain-list">
+        <li>Exact Match</li>
+        <li>PMR (Perfect Match Ratio)</li>
+        <li>Pairwise Accuracy</li>
+        <li>Kendall Tau</li>
+      </ul>
+      <p><strong>Interpretation:</strong></p>
+      <ul class="plain-list">
+        <li>Higher Exact Match / PMR / Pairwise Accuracy is better.</li>
+        <li>Kendall Tau closer to +1 is better.</li>
+      </ul>
+
+      <h4>8. System Workflow</h4>
+      <ul class="plain-list">
+        <li>User enters 3+ sentences (or loads Reuters sample).</li>
+        <li>User selects method: Baseline / Parsing / Compare.</li>
+        <li>Backend processes and generates reordered outputs.</li>
+        <li>UI shows:</li>
+        <li>Baseline output</li>
+        <li>Parsing output</li>
+        <li>Sentence flow graph</li>
+        <li>Evaluation metrics table</li>
+        <li>Parsing logic preview (Subject/Verb/Object)</li>
+      </ul>
+
+      <h4>9. Project Architecture</h4>
+      <ul class="plain-list">
+        <li>Frontend: HTML, CSS, JavaScript</li>
+        <li>Backend: Flask (Python)</li>
+        <li>NLP: spaCy + NLTK</li>
+        <li>Storage: SQLite for run history</li>
+        <li>Auth: Firebase Google Sign-In</li>
+      </ul>
+
+      <h4>10. Innovation / Novelty</h4>
+      <ul class="plain-list">
+        <li>Combines rule-like baseline and parsing-based ranking in one interactive app.</li>
+        <li>Adds explainability through parsing cards and flow graph.</li>
+        <li>Shows evaluation metrics directly in UI for academic analysis.</li>
+        <li>Lightweight, practical, and presentation-friendly implementation.</li>
+      </ul>
+
+      <h4>11. Why This Project (Why not only other models)</h4>
+      <ul class="plain-list">
+        <li>It is explainable (easy to justify in viva).</li>
+        <li>Low compute, fast to run locally.</li>
+        <li>Good educational value for syntax + coherence concepts.</li>
+        <li>Transparent comparison with baseline.</li>
+        <li>Easier deployment and maintenance than large black-box models.</li>
+      </ul>
+
+      <h4>12. Limitations</h4>
+      <ul class="plain-list">
+        <li>Parsing score is heuristic, not deep semantic understanding.</li>
+        <li>Mostly local sentence-level scoring.</li>
+        <li>Not a large transformer trained end-to-end for ordering.</li>
+        <li>Domain shift can affect quality.</li>
+      </ul>
+
+      <h4>13. Future Improvements</h4>
+      <ul class="plain-list">
+        <li>Add transformer-based reranker for stronger semantic ordering.</li>
+        <li>Add discourse-level features and entity grids.</li>
+        <li>Train/evaluate on multiple domains.</li>
+        <li>Add more robust human-evaluation benchmarking.</li>
+      </ul>
+
+      <h4>14. Final Conclusion</h4>
+      <p>This project successfully demonstrates that syntax-aware parsing signals can improve sentence ordering quality over a simple baseline, while keeping the system interpretable, fast, and suitable for real academic demonstration.</p>
+
+      <h4>Project Workflow Graph</h4>
+      <div class="workflow-strip" role="img" aria-label="Project workflow graph: Input to output analysis">
+        <span>Input Text</span>
+        <span>Baseline + Parsing</span>
+        <span>Reordering</span>
+        <span>Evaluation</span>
+        <span>Visual Analysis</span>
+      </div>
+    </article>
+
+    <article class="about-section card workflow-card">
+      <h3>2) About the Research Paper</h3>
+
+      <h4>Probabilistic Text Structuring: Experiments with Sentence Ordering</h4>
+      <p><strong>Author:</strong> Mirella Lapata</p>
+
+      <h4>1. Introduction</h4>
+      <p>In Natural Language Processing (NLP), generating a coherent and meaningful text requires arranging sentences in the correct order. This problem is known as sentence ordering or text structuring.</p>
+      <p>This paper addresses the challenge of:</p>
+      <p><strong>Automatically arranging a set of unordered sentences into a coherent and meaningful sequence.</strong></p>
+      <p>This is especially important in applications like:</p>
+      <ul class="plain-list">
+        <li>Multi-document summarization</li>
+        <li>Question answering</li>
+        <li>Text generation systems</li>
+      </ul>
+
+      <h4>2. Objective of the Paper</h4>
+      <p>The main goal of the paper is:</p>
+      <ul class="plain-list">
+        <li>To develop a probabilistic model</li>
+        <li>To learn sentence ordering patterns from real text</li>
+        <li>To generate a coherent sentence sequence automatically</li>
+      </ul>
+
+      <h4>3. Problem Statement</h4>
+      <p>When sentences are taken from different documents or summarized outputs, they lose their original order and become incoherent and confusing.</p>
+      <p>Traditional methods like chronological ordering and majority ordering do not always produce good results.</p>
+
+      <h4>4. Proposed Solution</h4>
+      <p>The paper proposes an unsupervised probabilistic approach that:</p>
+      <ul class="plain-list">
+        <li>Learns ordering constraints from a corpus</li>
+        <li>Uses statistical patterns instead of manual rules</li>
+        <li>Focuses on local coherence between sentences</li>
+      </ul>
+
+      <h4>5. Methodology</h4>
+      <h4>5.1 Probabilistic Model</h4>
+      <pre class="code-block">P(T) = P(S1) . P(S2|S1) . P(S3|S2) ... P(Sn|S(n-1))</pre>
+      <ul class="plain-list">
+        <li>Each sentence depends only on the previous sentence</li>
+        <li>This is called a Bigram Model</li>
+      </ul>
+
+      <h4>5.2 Feature-Based Representation</h4>
+      <p>Instead of full sentences, the model uses features:</p>
+      <ul class="plain-list">
+        <li>Verbs: capture actions and events</li>
+        <li>Nouns: capture entities (people, objects, organizations)</li>
+        <li>Dependencies: capture grammatical structure (subject-verb-object)</li>
+      </ul>
+
+      <h4>5.3 Probability Estimation</h4>
+      <pre class="code-block">P(feature_i | feature_(i-1))</pre>
+      <p>Estimated using frequency counts from corpus, to learn which features commonly follow others.</p>
+
+      <h4>5.4 Smoothing Technique</h4>
+      <p>Uses Katz Back-off smoothing to prevent zero-probability issues.</p>
+
+      <h4>5.5 Sentence Ordering Algorithm</h4>
+      <p>Uses a Greedy Algorithm:</p>
+      <ul class="plain-list">
+        <li>Select most probable starting sentence</li>
+        <li>Choose next sentence with highest probability</li>
+        <li>Continue until all sentences are ordered</li>
+      </ul>
+      <p>Reason: exact search is NP-complete and very slow.</p>
+
+      <h4>5.6 Graph Representation</h4>
+      <ul class="plain-list">
+        <li>Sentences -> Nodes</li>
+        <li>Probabilities -> Edges</li>
+      </ul>
+      <p>The task becomes finding the best path (order) in a graph.</p>
+
+      <h4>6. Evaluation Method</h4>
+      <p>The model is evaluated using Kendall's Tau (tau), measuring similarity between generated order and original human order.</p>
+      <ul class="plain-list">
+        <li>+1: Perfect match</li>
+        <li>0: Random</li>
+        <li>-1: Completely wrong</li>
+      </ul>
+
+      <h4>7. Experiments</h4>
+      <h4>Experiment 1: News Text Ordering</h4>
+      <ul class="plain-list">
+        <li>Model trained on BLLIP corpus</li>
+        <li>Tested on unseen articles</li>
+        <li>Best performance with noun features and verb + dependency features</li>
+      </ul>
+
+      <h4>Experiment 2: Human Comparison</h4>
+      <ul class="plain-list">
+        <li>Humans asked to reorder sentences</li>
+        <li>Model performance approximately close to human performance</li>
+      </ul>
+
+      <h4>Experiment 3: Multi-document Summarization</h4>
+      <ul class="plain-list">
+        <li>Sentences taken from different documents</li>
+        <li>Model produced coherent summaries better than random ordering</li>
+      </ul>
+
+      <h4>8. Key Results</h4>
+      <ul class="plain-list">
+        <li>Sentence ordering can be learned automatically</li>
+        <li>Local coherence is sufficient for good results</li>
+        <li>Nouns + dependencies are most effective features</li>
+        <li>Model performs close to human-level</li>
+      </ul>
+
+      <h4>9. Limitations</h4>
+      <ul class="plain-list">
+        <li>Considers only previous sentence (local context)</li>
+        <li>Does not fully capture deep semantics</li>
+        <li>Greedy algorithm may not give optimal solution</li>
+      </ul>
+
+      <h4>10. Applications</h4>
+      <ul class="plain-list">
+        <li>Text summarization systems</li>
+        <li>Question answering systems</li>
+        <li>AI content generation</li>
+        <li>Chatbots and NLP pipelines</li>
+      </ul>
+
+      <h4>11. Conclusion</h4>
+      <p>The paper introduces a data-driven probabilistic approach for sentence ordering that learns from real-world text, requires no manual rules, and produces coherent and meaningful text.</p>
+      <p><strong>Statistical patterns and local sentence relationships are sufficient to generate high-quality text structure.</strong></p>
+
+      <h4>Paper Method Graph</h4>
+      <div class="workflow-strip" role="img" aria-label="Research paper method graph from features to ordered text">
+        <span>Sentence Features</span>
+        <span>Transition Probabilities</span>
+        <span>Smoothing</span>
+        <span>Greedy Search</span>
+        <span>Ordered Text</span>
+      </div>
+
+      <p><a href="{{ url_for('static', filename='papers/P03-1069.pdf') }}" target="_blank" rel="noopener noreferrer">Open Research Paper (Local PDF)</a></p>
+    </article>
+
+    <article class="about-section card workflow-card model-comparison-card">
+      <h3>3) Innovation in Our Project Compared to Related Research</h3>
+
+      <h4>How to Compare Related Research</h4>
+      <ol class="plain-list">
+        <li>Define method groups: rule-based, probabilistic, coherence/entity, graph optimization, neural, transformer.</li>
+        <li>Compare each group on the same axes:</li>
+        <li>Context used (local vs global)</li>
+        <li>Training data need</li>
+        <li>Interpretability</li>
+        <li>Compute cost</li>
+        <li>Inference speed</li>
+        <li>Typical metrics (Kendall Tau, PMR, Pairwise, Exact Match)</li>
+        <li>Practical deployability</li>
+      </ol>
+
+      <h4>Comparison Matrix</h4>
+      <div class="eval-table-wrap">
+        <table class="eval-table" aria-label="Comparison matrix of sentence ordering approach families">
+          <thead>
+            <tr>
+              <th>Approach Family</th>
+              <th>Context</th>
+              <th>Accuracy Potential</th>
+              <th>Explainability</th>
+              <th>Compute</th>
+              <th>Deployment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Rule/Majority/Chronological</td>
+              <td>Low</td>
+              <td>Low-Medium</td>
+              <td>High</td>
+              <td>Very Low</td>
+              <td>Easy</td>
+            </tr>
+            <tr>
+              <td>Probabilistic (Lapata-style)</td>
+              <td>Local</td>
+              <td>Medium</td>
+              <td>Medium-High</td>
+              <td>Low</td>
+              <td>Easy</td>
+            </tr>
+            <tr>
+              <td>Entity/Coherence models</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td>Low-Medium</td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Graph/ILP optimization</td>
+              <td>Medium-High</td>
+              <td>Medium-High</td>
+              <td>Medium</td>
+              <td>Medium-High</td>
+              <td>Harder</td>
+            </tr>
+            <tr>
+              <td>Neural (RNN/Seq2Seq)</td>
+              <td>High</td>
+              <td>High</td>
+              <td>Low</td>
+              <td>High</td>
+              <td>Medium-Hard</td>
+            </tr>
+            <tr>
+              <td>Transformer rerankers</td>
+              <td>Very High</td>
+              <td>Very High</td>
+              <td>Low</td>
+              <td>Very High</td>
+              <td>Hard</td>
+            </tr>
+            <tr>
+              <td><strong>Our Project (Parsing-based + Baseline UI)</strong></td>
+              <td>Local-Medium</td>
+              <td>Medium</td>
+              <td><strong>High</strong></td>
+              <td><strong>Low</strong></td>
+              <td><strong>Easy</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>What Is Innovative in Our Project vs Related Work</h4>
+      <ol class="plain-list">
+        <li>Research idea converted into a full working product.</li>
+        <li>Side-by-side Baseline vs Parsing comparison in one run.</li>
+        <li>Explainable analysis (flow graph + SVO parsing preview).</li>
+        <li>Built-in evaluation panel (Exact Match, PMR, Pairwise, Kendall Tau).</li>
+        <li>Lightweight, fast, demo-ready system for academic use.</li>
+      </ol>
+    </article>
+  </section>
+</main>
+{% endblock %}

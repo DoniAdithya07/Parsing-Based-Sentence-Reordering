@@ -14,6 +14,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 from baseline import baseline_reorder
 from data_loader import ensure_nltk_data, load_reuters_sentences
 from parser_model import get_spacy_model, parser_reorder
+from evaluate import evaluate_sequence
 from preprocess import clean_and_split_sentences, format_output
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -343,6 +344,7 @@ def reorder() -> str:
         "parser_fallback": False,
     }
     parse_cards = []
+    evaluation_rows = []
 
     if request.method == "POST":
         raw_input = request.form.get("input_text", "")
@@ -358,6 +360,33 @@ def reorder() -> str:
                 result = build_reorder_result(sentences, selected_method)
                 if result["parser_error"]:
                     error = f"{result['parser_error']} Using fallback output for parsing view."
+
+                baseline_eval = evaluate_sequence(result["baseline_output"], sentences) if result["baseline_output"] else {}
+                parsing_eval = evaluate_sequence(result["parsing_output"], sentences) if result["parsing_output"] else {}
+
+                evaluation_rows = [
+                    {
+                        "metric": "Exact Match",
+                        "baseline": f"{baseline_eval.get('exact_match', 0.0) * 100:.1f}%" if baseline_eval else "-",
+                        "parsing": f"{parsing_eval.get('exact_match', 0.0) * 100:.1f}%" if parsing_eval else "-",
+                    },
+                    {
+                        "metric": "PMR (Perfect Match Ratio)",
+                        "baseline": f"{baseline_eval.get('pmr', 0.0) * 100:.1f}%" if baseline_eval else "-",
+                        "parsing": f"{parsing_eval.get('pmr', 0.0) * 100:.1f}%" if parsing_eval else "-",
+                    },
+                    {
+                        "metric": "Pairwise Accuracy",
+                        "baseline": f"{baseline_eval.get('pairwise_accuracy', 0.0) * 100:.1f}%" if baseline_eval else "-",
+                        "parsing": f"{parsing_eval.get('pairwise_accuracy', 0.0) * 100:.1f}%" if parsing_eval else "-",
+                    },
+                    {
+                        "metric": "Kendall Tau",
+                        "baseline": f"{baseline_eval.get('kendall_tau', 0.0):.3f}" if baseline_eval else "-",
+                        "parsing": f"{parsing_eval.get('kendall_tau', 0.0):.3f}" if parsing_eval else "-",
+                    },
+                ]
+
                 reference_for_cards = result["parsing_output"] or result["baseline_output"]
                 parse_cards = extract_parse_cards(reference_for_cards)
             except RuntimeError as exc:
@@ -375,9 +404,9 @@ def reorder() -> str:
         parsing_percent=result["parsing_percent"],
         selected_method=result["selected_method"],
         parse_cards=parse_cards,
+        evaluation_rows=evaluation_rows,
         error=error,
     )
-
 
 @app.route("/history")
 def history() -> str:
@@ -404,9 +433,9 @@ def guide() -> str:
     return render_template("guide.html")
 
 
-@app.route("/examples")
-def examples() -> str:
-    return render_template("examples.html")
+@app.route("/presentation")
+def presentation() -> str:
+    return render_template("presentation.html")
 
 
 @app.route("/api/auth/google", methods=["POST"])
@@ -630,3 +659,12 @@ initialize_runtime()
 if __name__ == "__main__":
     debug_enabled = os.getenv("FLASK_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}
     app.run(debug=debug_enabled)
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -28,9 +28,9 @@
           <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /></svg></span>
           <span class="tab-label">About</span>
         </a>
-        <a class="tube-link" data-route="/examples" href="{{ url_for('examples') }}" aria-label="Examples">
-          <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M20 22V5a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 5.5v14" /></svg></span>
-          <span class="tab-label">Examples</span>
+        <a class="tube-link" data-route="/presentation" href="{{ url_for('presentation') }}" aria-label="Presentation">
+          <span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H4z" /><path d="M8 20h8" /><path d="M12 16v4" /></svg></span>
+          <span class="tab-label">Presentation</span>
         </a>
 
         <div class="auth-section">
@@ -61,7 +61,6 @@
             <div class="footer-column">
               <h4>Product</h4>
               <a href="{{ url_for('reorder') }}">Reorder</a>
-              <a href="{{ url_for('examples') }}">Examples</a>
             </div>
             <div class="footer-column">
               <h4>Project</h4>
@@ -72,6 +71,7 @@
               <h4>Resources</h4>
               <a href="{{ url_for('documentation') }}">Documentation</a>
               <a href="{{ url_for('guide') }}">Guide</a>
+              <a href="{{ url_for('presentation') }}">Presentation</a>
             </div>
             <div class="footer-column">
               <h4>Navigation</h4>
@@ -99,5 +99,3 @@
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>
-
-

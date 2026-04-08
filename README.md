@@ -168,34 +168,8 @@ pytest -q
 
 CI runs automatically on push and pull requests via GitHub Actions (`.github/workflows/ci.yml`).
 
-## Deployment (Streamlit Cloud)
-This repo now includes a Streamlit deployment entry:
-- `streamlit_app.py`
-- `.streamlit/config.toml`
-- `runtime.txt`
-
-### Deploy steps
-1. Push latest code to GitHub.
-2. Open [Streamlit Community Cloud](https://share.streamlit.io/).
-3. Click **New app** and select this repository.
-4. Set **Main file path** to `streamlit_app.py`.
-5. Click **Deploy**.
-
-### Optional secrets (for Firebase-backed auth flows)
-Add these in Streamlit app settings -> **Secrets** only if needed:
-- `FLASK_SECRET_KEY`
-- `FIREBASE_API_KEY`
-- `FIREBASE_AUTH_DOMAIN`
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_APP_ID`
-- `FIREBASE_STORAGE_BUCKET` (optional)
-- `FIREBASE_MESSAGING_SENDER_ID` (optional)
-- `FIREBASE_MEASUREMENT_ID` (optional)
-- `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
-
-Notes:
-- Streamlit deployment uses the Streamlit interface (`streamlit_app.py`), while Flask files remain in the repo.
-- Session history in Streamlit is per-user-session unless you connect persistent storage.
+## Deployment
+Deployment instructions can be added later based on the selected platform.
 
 ## Screenshots
 Add screenshots in a `docs/screenshots/` folder and update paths below.

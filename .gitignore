@@ -12,4 +12,3 @@ pytest-cache-files-*/
 *.log
 .coverage
 .mypy_cache/
-.streamlit/secrets.toml
