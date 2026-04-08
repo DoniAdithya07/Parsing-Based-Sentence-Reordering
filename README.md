@@ -168,54 +168,34 @@ pytest -q
 
 CI runs automatically on push and pull requests via GitHub Actions (`.github/workflows/ci.yml`).
 
-## Deployment (Render)
-This repo includes:
-- `render.yaml` (Blueprint config)
-- `Procfile` (web process)
-- `gunicorn` in `requirements.txt`
+## Deployment (Streamlit Cloud)
+This repo now includes a Streamlit deployment entry:
+- `streamlit_app.py`
+- `.streamlit/config.toml`
+- `runtime.txt`
 
 ### Deploy steps
 1. Push latest code to GitHub.
-2. In Render, choose **New +** -> **Blueprint**.
-3. Select this repository and deploy.
-4. Set Firebase environment variables in Render (if auth is required):
-   - `FIREBASE_API_KEY`
-   - `FIREBASE_AUTH_DOMAIN`
-   - `FIREBASE_PROJECT_ID`
-   - `FIREBASE_APP_ID`
-   - `FIREBASE_STORAGE_BUCKET` (optional)
-   - `FIREBASE_MESSAGING_SENDER_ID` (optional)
-   - `FIREBASE_MEASUREMENT_ID` (optional)
-   - `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
+2. Open [Streamlit Community Cloud](https://share.streamlit.io/).
+3. Click **New app** and select this repository.
+4. Set **Main file path** to `streamlit_app.py`.
+5. Click **Deploy**.
 
-Render build installs dependencies and downloads:
-- spaCy model: `en_core_web_sm`
-- NLTK resources: `punkt`, `reuters`
+### Optional secrets (for Firebase-backed auth flows)
+Add these in Streamlit app settings -> **Secrets** only if needed:
+- `FLASK_SECRET_KEY`
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_APP_ID`
+- `FIREBASE_STORAGE_BUCKET` (optional)
+- `FIREBASE_MESSAGING_SENDER_ID` (optional)
+- `FIREBASE_MEASUREMENT_ID` (optional)
+- `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
 
-## Deployment (Vercel)
-This repo also supports Vercel deployment for the current Flask app using:
-- `vercel.json`
-- `app.py` as the Python serverless entry
-
-### Deploy steps
-1. Push latest code to GitHub.
-2. In Vercel, click **Add New** -> **Project**.
-3. Import this repository.
-4. Keep default build settings and deploy.
-5. Add environment variables in Vercel (if auth is needed):
-   - `FLASK_SECRET_KEY`
-   - `FIREBASE_API_KEY`
-   - `FIREBASE_AUTH_DOMAIN`
-   - `FIREBASE_PROJECT_ID`
-   - `FIREBASE_APP_ID`
-   - `FIREBASE_STORAGE_BUCKET` (optional)
-   - `FIREBASE_MESSAGING_SENDER_ID` (optional)
-   - `FIREBASE_MEASUREMENT_ID` (optional)
-   - `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
-
-Note:
-- Vercel uses serverless runtime. History storage is temporary unless you connect a persistent DB.
-- Streamlit deployment would require rewriting the Flask UI into a Streamlit app.
+Notes:
+- Streamlit deployment uses the Streamlit interface (`streamlit_app.py`), while Flask files remain in the repo.
+- Session history in Streamlit is per-user-session unless you connect persistent storage.
 
 ## Screenshots
 Add screenshots in a `docs/screenshots/` folder and update paths below.
