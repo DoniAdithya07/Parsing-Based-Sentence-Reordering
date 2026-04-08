@@ -168,6 +168,30 @@ pytest -q
 
 CI runs automatically on push and pull requests via GitHub Actions (`.github/workflows/ci.yml`).
 
+## Deployment (Render)
+This repo includes:
+- `render.yaml` (Blueprint config)
+- `Procfile` (web process)
+- `gunicorn` in `requirements.txt`
+
+### Deploy steps
+1. Push latest code to GitHub.
+2. In Render, choose **New +** -> **Blueprint**.
+3. Select this repository and deploy.
+4. Set Firebase environment variables in Render (if auth is required):
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_APP_ID`
+   - `FIREBASE_STORAGE_BUCKET` (optional)
+   - `FIREBASE_MESSAGING_SENDER_ID` (optional)
+   - `FIREBASE_MEASUREMENT_ID` (optional)
+   - `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+Render build installs dependencies and downloads:
+- spaCy model: `en_core_web_sm`
+- NLTK resources: `punkt`, `reuters`
+
 ## Screenshots
 Add screenshots in a `docs/screenshots/` folder and update paths below.
 
