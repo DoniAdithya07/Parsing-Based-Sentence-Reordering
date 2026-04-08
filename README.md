@@ -192,6 +192,31 @@ Render build installs dependencies and downloads:
 - spaCy model: `en_core_web_sm`
 - NLTK resources: `punkt`, `reuters`
 
+## Deployment (Vercel)
+This repo also supports Vercel deployment for the current Flask app using:
+- `vercel.json`
+- `app.py` as the Python serverless entry
+
+### Deploy steps
+1. Push latest code to GitHub.
+2. In Vercel, click **Add New** -> **Project**.
+3. Import this repository.
+4. Keep default build settings and deploy.
+5. Add environment variables in Vercel (if auth is needed):
+   - `FLASK_SECRET_KEY`
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_APP_ID`
+   - `FIREBASE_STORAGE_BUCKET` (optional)
+   - `FIREBASE_MESSAGING_SENDER_ID` (optional)
+   - `FIREBASE_MEASUREMENT_ID` (optional)
+   - `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+Note:
+- Vercel uses serverless runtime. History storage is temporary unless you connect a persistent DB.
+- Streamlit deployment would require rewriting the Flask UI into a Streamlit app.
+
 ## Screenshots
 Add screenshots in a `docs/screenshots/` folder and update paths below.
 

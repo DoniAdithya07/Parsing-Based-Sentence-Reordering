@@ -3,11 +3,13 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from typing import List
+import re
 
 import nltk
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 NLTK_DATA_DIR = PROJECT_ROOT / ".nltk_data"
+LOCAL_REUTERS_FALLBACK = PROJECT_ROOT / "dataset" / "reuters_sentences_6plus.txt"
 
 
 def _ensure_resource(resource_path: str, package_name: str, allow_download: bool = True) -> None:
@@ -48,17 +50,36 @@ def load_reuters_sentences(limit: int = 200) -> List[str]:
     from nltk.tokenize import sent_tokenize
 
     sentences: List[str] = []
+
+    def _local_fallback() -> List[str]:
+        if not LOCAL_REUTERS_FALLBACK.exists():
+            return []
+        out: List[str] = []
+        with LOCAL_REUTERS_FALLBACK.open("r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                cleaned = " ".join(line.split())
+                if cleaned and len(cleaned.split()) >= 6:
+                    out.append(cleaned)
+                    if len(out) >= limit:
+                        break
+        return out
+
     try:
         file_ids = reuters.fileids()
     except LookupError:
-        return sentences
+        return _local_fallback()
 
     for file_id in file_ids:
         raw = reuters.raw(file_id)
-        for sent in sent_tokenize(raw):
+        try:
+            tokenized = sent_tokenize(raw)
+        except LookupError:
+            # Fallback for environments where punkt is unavailable.
+            tokenized = re.split(r"(?<=[.!?])\s+", raw.strip())
+        for sent in tokenized:
             cleaned = " ".join(sent.split())
             if cleaned and len(cleaned.split()) >= 6:
                 sentences.append(cleaned)
                 if len(sentences) >= limit:
                     return sentences
-    return sentences
+    return sentences or _local_fallback()

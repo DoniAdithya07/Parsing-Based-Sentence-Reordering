@@ -17,7 +17,21 @@ from parser_model import get_spacy_model, parser_reorder
 from preprocess import clean_and_split_sentences, format_output
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-INSTANCE_DIR = PROJECT_ROOT / "instance"
+
+
+def _resolve_instance_dir() -> Path:
+    env_dir = os.getenv("INSTANCE_DIR", "").strip()
+    if env_dir:
+        return Path(env_dir)
+
+    # Vercel serverless runtime allows writable temporary storage under /tmp.
+    if os.getenv("VERCEL", "").strip():
+        return Path("/tmp/parsing_based_sentence")
+
+    return PROJECT_ROOT / "instance"
+
+
+INSTANCE_DIR = _resolve_instance_dir()
 HISTORY_DB_PATH = INSTANCE_DIR / "history.db"
 SECRET_KEY_PATH = INSTANCE_DIR / ".flask_secret_key"
 
