@@ -146,7 +146,7 @@ function setGuestMode(isGuest) {
 
   const message = document.getElementById("auth-required-msg");
   if (message) {
-    message.textContent = isGuest ? "Login to unlock full features" : "";
+    message.textContent = isGuest ? "Login is optional. Sign in to save personal history." : "";
     message.style.display = isGuest ? "block" : "none";
   }
 }
@@ -372,4 +372,5 @@ window.showToast = showToast;
 document.addEventListener("DOMContentLoaded", () => {
   initFirebaseAuth();
 });
+
 
