@@ -13,7 +13,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 
 from baseline import baseline_reorder
 from data_loader import ensure_nltk_data, load_reuters_sentences
-from parser_model import get_spacy_model, parser_reorder
+from parser_model import get_spacy_model, parser_reorder, spacy_engine_mode
 from evaluate import evaluate_sequence
 from preprocess import clean_and_split_sentences, format_output
 
@@ -59,6 +59,26 @@ def _load_app_secret_key() -> str:
 app = Flask(__name__)
 app.secret_key = _load_app_secret_key()
 _REUTERS_CACHE: List[str] = []
+OPEN_DOMAIN_SAMPLE_BANK: List[List[str]] = [
+    [
+        "The city marathon started before sunrise to avoid the midday heat.",
+        "Volunteers handed water bottles to runners at every checkpoint.",
+        "A sudden drizzle cooled the streets and lifted everyone's pace.",
+        "By noon, thousands of spectators were cheering near the finish line.",
+    ],
+    [
+        "Mina backed up the project files before installing the update.",
+        "The installation paused once because the network briefly dropped.",
+        "After reconnecting, the setup resumed and completed without errors.",
+        "She then ran a quick test to confirm all features were working.",
+    ],
+    [
+        "The teacher divided the class into small groups for the science activity.",
+        "Each group received a different material to test how heat moves.",
+        "Students recorded observations and compared their results on a chart.",
+        "In the final discussion, they connected the experiment to real-life examples.",
+    ],
+]
 DEFAULT_FIREBASE_WEB_CONFIG = {
     "apiKey": "AIzaSyAm-MM0bHIpMf2cv0AlCYrRLM8CjRPYVr4",
     "authDomain": "parsing-based-sentence.firebaseapp.com",
@@ -97,7 +117,7 @@ def firebase_web_enabled() -> bool:
     return all(required)
 
 
-def verify_google_id_token(id_token: str):
+def verify_firebase_id_token(id_token: str):
     try:
         import firebase_admin
         from firebase_admin import auth, credentials
@@ -127,7 +147,13 @@ def verify_google_id_token(id_token: str):
         return None, f"Token verification failed: {exc}"
 
 
-def validate_reorder_input(raw_input: str, min_sentences: int = 3, max_sentences: int = 30):
+
+
+# Backward compatibility alias
+def verify_google_id_token(id_token: str):
+    return verify_firebase_id_token(id_token)
+
+def validate_reorder_input(raw_input: str, min_sentences: int = 3, max_sentences: int = 80):
     if not raw_input or not raw_input.strip():
         return [], "Input is empty"
 
@@ -146,6 +172,35 @@ def run_baseline_method(sentences: List[str]):
 def run_parsing_method(sentences: List[str]):
     nlp = get_spacy_model()
     return parser_reorder(sentences, nlp)
+
+
+def detect_input_reconstruction(raw_input: str, sentences: List[str]) -> Dict[str, Any]:
+    raw_text = str(raw_input or "")
+    raw_lines = [line.strip() for line in raw_text.replace("\r\n", "\n").splitlines() if line.strip()]
+    had_newlines = "\n" in raw_text
+    had_malformed_tokens = any(token in raw_text for token in ("<", ">", "&lt", "&gt"))
+    normalized_join = " ".join(sentences).lower()
+    cleaned_malformed = had_malformed_tokens and ("<" not in normalized_join and ">" not in normalized_join and "&lt" not in normalized_join and "&gt" not in normalized_join)
+
+    reconstructed_by_line_merge = had_newlines and len(raw_lines) != len(sentences)
+    return {
+        "raw_line_count": len(raw_lines),
+        "sentence_count": len(sentences),
+        "had_newlines": had_newlines,
+        "had_malformed_tokens": had_malformed_tokens,
+        "cleaned_malformed_tokens": cleaned_malformed,
+        "reconstructed_by_line_merge": reconstructed_by_line_merge,
+    }
+
+
+def get_parser_diagnostics() -> Dict[str, Any]:
+    nlp = get_spacy_model()
+    pipes = list(getattr(nlp, "pipe_names", []) or [])
+    return {
+        "engine_mode": spacy_engine_mode(nlp),
+        "pipe_names": pipes,
+        "parse_component_available": "parser" in pipes,
+    }
 
 
 def to_percent(score: float | None) -> int | None:
@@ -177,22 +232,30 @@ def build_reorder_result(sentences: List[str], selected_method: str):
     parsing_score: float | None = None
     parser_error = ""
     parser_fallback = False
+    parser_engine_mode = ""
+    parser_parse_component_available = False
 
     method = selected_method.lower().strip()
     if method == "baseline":
         baseline_output, baseline_score = run_baseline_method(sentences)
     elif method == "parser":
+        parser_diag = get_parser_diagnostics()
+        parser_engine_mode = str(parser_diag["engine_mode"])
+        parser_parse_component_available = bool(parser_diag["parse_component_available"])
         try:
             parsing_output, parsing_score = run_parsing_method(sentences)
-        except RuntimeError as exc:
+        except Exception as exc:
             parser_error = str(exc)
             parsing_output, parsing_score = run_baseline_method(sentences)
             parser_fallback = True
     else:
         baseline_output, baseline_score = run_baseline_method(sentences)
+        parser_diag = get_parser_diagnostics()
+        parser_engine_mode = str(parser_diag["engine_mode"])
+        parser_parse_component_available = bool(parser_diag["parse_component_available"])
         try:
             parsing_output, parsing_score = run_parsing_method(sentences)
-        except RuntimeError as exc:
+        except Exception as exc:
             parser_error = str(exc)
             parsing_output = baseline_output.copy()
             parsing_score = baseline_score
@@ -209,6 +272,11 @@ def build_reorder_result(sentences: List[str], selected_method: str):
         "parsing_percent": to_percent(parsing_score),
         "parser_error": parser_error,
         "parser_fallback": parser_fallback,
+        "parsing_applied": method in {"parser", "compare"} and bool(parsing_output) and not parser_fallback,
+        "parsing_engine_mode": parser_engine_mode,
+        "parser_parse_component_available": parser_parse_component_available,
+        "baseline_reordered": bool(baseline_output) and baseline_output != sentences,
+        "parsing_reordered": bool(parsing_output) and parsing_output != sentences,
     }
 
 
@@ -275,6 +343,17 @@ def initialize_runtime() -> None:
     init_history_db()
 
 
+def pick_open_domain_sample() -> List[str]:
+    """Return a built-in sample when Reuters data is unavailable."""
+    chosen = random.choice(OPEN_DOMAIN_SAMPLE_BANK)
+    # Keep API shape consistent with Reuters mode (3-5 lines).
+    if len(chosen) <= 5:
+        return chosen.copy()
+
+    k = random.randint(3, 5)
+    return random.sample(chosen, k=k)
+
+
 @app.context_processor
 def inject_globals():
     return {
@@ -332,6 +411,8 @@ def logout() -> Any:
 def reorder() -> str:
     error = ""
     input_text = ""
+    graph_input_text = ""
+    input_diag: Dict[str, Any] = {}
     result = {
         "selected_method": "baseline",
         "baseline_output": [],
@@ -342,22 +423,59 @@ def reorder() -> str:
         "parsing_percent": None,
         "parser_error": "",
         "parser_fallback": False,
+        "parsing_applied": False,
+        "parsing_engine_mode": "",
+        "parser_parse_component_available": None,
+        "baseline_reordered": False,
+        "parsing_reordered": False,
     }
     parse_cards = []
     evaluation_rows = []
+
+    capability_rows = [
+        {
+            "name": "Input reconstruction and cleaning reliability",
+            "status": "Enabled",
+            "details": "Fragment merge, malformed token cleanup, and input-level diagnostics are active.",
+        },
+        {
+            "name": "Topic-aware + pronoun-aware ordering",
+            "status": "Enabled",
+            "details": "Parser ranking uses topic continuity, entity flow, and pronoun-aware transition scoring.",
+        },
+        {
+            "name": "Explainable and fast pipeline",
+            "status": "Enabled",
+            "details": "SVO preview cards, sentence flow graph, and lightweight heuristic scoring are available in UI.",
+        },
+        {
+            "name": "Safe fallback on high-risk mixed-topic inputs",
+            "status": "Enabled",
+            "details": "High-diversity reorder gating and parser fallback protect against unstable output.",
+        },
+        {
+            "name": "Debug diagnostics in API",
+            "status": "Enabled",
+            "details": "/api/reorder returns input diagnostics, parser mode, fallback flags, and reorder activity flags.",
+        },
+    ]
 
     if request.method == "POST":
         raw_input = request.form.get("input_text", "")
         selected_method = request.form.get("method", "baseline")
         input_text = raw_input
+        graph_input_text = raw_input
         sentences, validation_error = validate_reorder_input(raw_input)
 
         if validation_error:
             error = "Please paste text with at least 3 sentences." if validation_error == "Input is empty" else validation_error
             result["selected_method"] = selected_method
         else:
+            # Keep flow-graph input aligned with model inputs.
+            graph_input_text = format_output(sentences)
             try:
                 result = build_reorder_result(sentences, selected_method)
+                input_diag = detect_input_reconstruction(raw_input, sentences)
                 if result["parser_error"]:
                     error = f"{result['parser_error']} Using fallback output for parsing view."
 
@@ -389,13 +507,31 @@ def reorder() -> str:
 
                 reference_for_cards = result["parsing_output"] or result["baseline_output"]
                 parse_cards = extract_parse_cards(reference_for_cards)
-            except RuntimeError as exc:
+            except Exception as exc:
                 error = str(exc)
                 result["selected_method"] = selected_method
+
+    diagnostics_has_run = bool(result["baseline_output"] or result["parsing_output"])
+    diagnostics = {
+        "has_run": diagnostics_has_run,
+        "raw_line_count": input_diag.get("raw_line_count"),
+        "sentence_count": input_diag.get("sentence_count"),
+        "had_newlines": input_diag.get("had_newlines"),
+        "reconstructed_by_line_merge": input_diag.get("reconstructed_by_line_merge"),
+        "had_malformed_tokens": input_diag.get("had_malformed_tokens"),
+        "cleaned_malformed_tokens": input_diag.get("cleaned_malformed_tokens"),
+        "parsing_applied": result.get("parsing_applied"),
+        "parsing_engine_mode": result.get("parsing_engine_mode"),
+        "parser_parse_component_available": result.get("parser_parse_component_available"),
+        "parser_fallback": result.get("parser_fallback"),
+        "baseline_reordered": result.get("baseline_reordered"),
+        "parsing_reordered": result.get("parsing_reordered"),
+    }
 
     return render_template(
         "reorder.html",
         input_text=input_text,
+        graph_input_text=graph_input_text,
         baseline_text=format_output(result["baseline_output"]),
         parsing_text=format_output(result["parsing_output"]),
         baseline_score=result["baseline_score"],
@@ -405,6 +541,8 @@ def reorder() -> str:
         selected_method=result["selected_method"],
         parse_cards=parse_cards,
         evaluation_rows=evaluation_rows,
+        capability_rows=capability_rows,
+        diagnostics=diagnostics,
         error=error,
     )
 
@@ -423,29 +561,20 @@ def dataset() -> str:
     return render_template("dataset.html")
 
 
-@app.route("/documentation")
-def documentation() -> str:
-    return render_template("documentation.html")
-
-
-@app.route("/guide")
-def guide() -> str:
-    return render_template("guide.html")
-
-
 @app.route("/presentation")
 def presentation() -> str:
     return render_template("presentation.html")
 
 
+@app.route("/api/auth/firebase", methods=["POST"])
 @app.route("/api/auth/google", methods=["POST"])
-def auth_google():
+def auth_firebase():
     payload = request.get_json(silent=True) or {}
     token = str(payload.get("idToken", "")).strip()
     if not token:
         return json_response({"error": "Missing Firebase ID token"}, 400)
 
-    decoded, err = verify_google_id_token(token)
+    decoded, err = verify_firebase_id_token(token)
     if err:
         return json_response({"error": err}, 401)
 
@@ -454,15 +583,16 @@ def auth_google():
 
     session["user"] = name
     session["user_email"] = email
-    session["auth_provider"] = "google"
+    provider = str((decoded.get("firebase") or {}).get("sign_in_provider", "firebase"))
+    session["auth_provider"] = provider
 
     return json_response(
         {
-            "message": "Google login successful",
+            "message": "Firebase login successful",
             "user": {
                 "name": name,
                 "email": email,
-                "provider": "google",
+                "provider": provider,
             },
         }
     )
@@ -478,7 +608,7 @@ def auth_status():
             "user": {
                 "name": session.get("user", ""),
                 "email": session.get("user_email", ""),
-                "provider": session.get("auth_provider", "google"),
+                "provider": session.get("auth_provider", "firebase"),
             },
         }
     )
@@ -493,25 +623,36 @@ def auth_logout():
 @app.route("/api/sample", methods=["GET"])
 def random_sample():
     global _REUTERS_CACHE
-    try:
-        if len(_REUTERS_CACHE) < 80:
-            _REUTERS_CACHE = load_reuters_sentences(limit=400)
-    except Exception:
-        _REUTERS_CACHE = []
+    source_mode = str(request.args.get("source", "auto")).strip().lower()
+    if source_mode not in {"auto", "dataset", "open"}:
+        return json_response({"error": "Invalid source. Use auto, dataset, or open."}, 400)
 
-    if len(_REUTERS_CACHE) < 3:
+    if source_mode != "open":
+        try:
+            if len(_REUTERS_CACHE) < 80:
+                _REUTERS_CACHE = load_reuters_sentences(limit=400)
+        except Exception:
+            _REUTERS_CACHE = []
+
+    if source_mode in {"auto", "dataset"} and len(_REUTERS_CACHE) >= 3:
+        k = random.randint(3, 5)
+        picked = random.sample(_REUTERS_CACHE, k=k)
         return json_response(
             {
-                "error": "Reuters dataset samples are unavailable locally. No non-dataset fallback is enabled."
-            },
-            503,
+                "source": "dataset",
+                "sentences": picked,
+                "text": "\n".join(picked),
+                "count": len(picked),
+            }
         )
 
-    k = random.randint(3, 5)
-    picked = random.sample(_REUTERS_CACHE, k=k)
+    if source_mode == "dataset":
+        return json_response({"error": "Reuters dataset sample is unavailable right now."}, 503)
 
+    picked = pick_open_domain_sample()
     return json_response(
         {
+            "source": "open",
             "sentences": picked,
             "text": "\n".join(picked),
             "count": len(picked),
@@ -538,10 +679,12 @@ def api_reorder():
         return json_response({"error": validation_error}, 400)
 
     result = build_reorder_result(sentences, selected_method)
+    input_diag = detect_input_reconstruction(raw_input, sentences)
 
     return json_response(
         {
             "input_sentences": sentences,
+            "input_diagnostics": input_diag,
             "selected_method": result["selected_method"],
             "baseline_output": result["baseline_output"],
             "parsing_output": result["parsing_output"],
@@ -553,6 +696,11 @@ def api_reorder():
             "parsing_percent": result["parsing_percent"],
             "parser_error": result["parser_error"],
             "parser_fallback": result["parser_fallback"],
+            "parsing_applied": result["parsing_applied"],
+            "parsing_engine_mode": result["parsing_engine_mode"],
+            "parser_parse_component_available": result["parser_parse_component_available"],
+            "baseline_reordered": result["baseline_reordered"],
+            "parsing_reordered": result["parsing_reordered"],
             "count": len(sentences),
         }
     )
@@ -659,6 +807,7 @@ initialize_runtime()
 if __name__ == "__main__":
     debug_enabled = os.getenv("FLASK_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}
     app.run(debug=debug_enabled)
+
 
 
 

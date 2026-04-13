@@ -1007,6 +1007,92 @@ body {
   text-transform: uppercase;
   color: var(--muted-text);
 }
+
+.capability-card,
+.diagnostics-card {
+  margin-top: 18px;
+}
+
+.capability-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.capability-item {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.capability-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.capability-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.capability-details {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted-text);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.status-badge.status-on {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.55);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.diagnostics-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.diag-row {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diag-label {
+  color: var(--muted-text);
+  font-size: 12px;
+}
+
+.diag-value {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  text-align: right;
+}
 .parse-visuals {
   margin-top: 18px;
 }
@@ -1101,6 +1187,10 @@ body {
 
 @media (max-width: 920px) {
   .compare-row {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostics-grid {
     grid-template-columns: 1fr;
   }
 

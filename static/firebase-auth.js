@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   setPersistence,
   browserLocalPersistence,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
 
@@ -105,17 +107,23 @@ function getInitials(nameOrEmail) {
   return value.slice(0, 2).toUpperCase();
 }
 
-function setLoginButtonState({ busy, text }) {
+function setAuthButtonsState({ busy, text }) {
   const loginBtn = document.getElementById("login-btn");
-  if (!loginBtn) return;
+  const emailLoginBtn = document.getElementById("email-login-btn");
+  const emailRegisterBtn = document.getElementById("email-register-btn");
 
-  if (!loginBtn.dataset.defaultText) {
-    loginBtn.dataset.defaultText = loginBtn.textContent || "Login with Google";
+  const buttons = [loginBtn, emailLoginBtn, emailRegisterBtn].filter(Boolean);
+  buttons.forEach((btn) => {
+    btn.disabled = Boolean(busy);
+    btn.classList.toggle("auth-disabled", Boolean(busy));
+  });
+
+  if (loginBtn) {
+    if (!loginBtn.dataset.defaultText) {
+      loginBtn.dataset.defaultText = loginBtn.textContent || "Login with Google";
+    }
+    loginBtn.textContent = text || loginBtn.dataset.defaultText;
   }
-
-  loginBtn.disabled = Boolean(busy);
-  loginBtn.textContent = text || loginBtn.dataset.defaultText;
-  loginBtn.classList.toggle("auth-disabled", Boolean(busy));
 }
 
 function ensureSessionMessage() {
@@ -154,6 +162,8 @@ function setGuestMode(isGuest) {
 function updateAuthUI(user) {
   const userInfo = document.getElementById("user-info");
   const loginBtn = document.getElementById("login-btn");
+  const emailLoginBtn = document.getElementById("email-login-btn");
+  const emailRegisterBtn = document.getElementById("email-register-btn");
   const logoutBtn = document.getElementById("logout-btn");
   const avatar = document.getElementById("user-avatar");
   const sessionNote = ensureSessionMessage();
@@ -161,9 +171,11 @@ function updateAuthUI(user) {
   if (!userInfo || !loginBtn || !logoutBtn || !avatar) return;
 
   if (user) {
-    const displayName = user.displayName || user.email || "Google User";
+    const displayName = user.displayName || user.email || "User";
     userInfo.textContent = displayName;
     loginBtn.style.display = "none";
+    if (emailLoginBtn) emailLoginBtn.style.display = "none";
+    if (emailRegisterBtn) emailRegisterBtn.style.display = "none";
     logoutBtn.style.display = "inline-flex";
 
     avatar.title = `Logged in as: ${displayName}`;
@@ -179,10 +191,12 @@ function updateAuthUI(user) {
 
     if (sessionNote) sessionNote.style.display = "inline-block";
     setGuestMode(false);
-    setLoginButtonState({ busy: false });
+    setAuthButtonsState({ busy: false });
   } else {
     userInfo.textContent = "";
     loginBtn.style.display = "inline-flex";
+    if (emailLoginBtn) emailLoginBtn.style.display = "inline-flex";
+    if (emailRegisterBtn) emailRegisterBtn.style.display = "inline-flex";
     logoutBtn.style.display = "none";
     avatar.textContent = "U";
     avatar.style.backgroundImage = "none";
@@ -191,7 +205,7 @@ function updateAuthUI(user) {
 
     if (sessionNote) sessionNote.style.display = "none";
     setGuestMode(true);
-    setLoginButtonState({ busy: false });
+    setAuthButtonsState({ busy: false });
   }
 }
 
@@ -202,8 +216,14 @@ function mapAuthErrorToMessage(error) {
   if (error.code === "auth/popup-closed-by-user") return "Login popup was closed.";
   if (error.code === "auth/network-request-failed") return "Network error. Check internet and try again.";
   if (error.code === "auth/unauthorized-domain") return "This domain is not authorized in Firebase Auth settings.";
-  if (error.code === "auth/operation-not-allowed") return "Google sign-in is not enabled in Firebase console.";
+  if (error.code === "auth/operation-not-allowed") return "Enable Google and Email/Password sign-in in Firebase console.";
   if (error.code === "auth/invalid-api-key") return "Firebase API key is invalid.";
+  if (error.code === "auth/invalid-email") return "Please enter a valid email address.";
+  if (error.code === "auth/user-not-found") return "No account found for this email.";
+  if (error.code === "auth/wrong-password") return "Incorrect password.";
+  if (error.code === "auth/invalid-credential") return "Invalid email or password.";
+  if (error.code === "auth/email-already-in-use") return "This email is already registered.";
+  if (error.code === "auth/weak-password") return "Password is too weak (minimum 6 characters).";
 
   return error.message || "Login failed. Please try again.";
 }
@@ -214,10 +234,17 @@ function shouldFallbackToRedirect(error) {
 
 function isBackendAuthOptionalError(error) {
   const message = String((error && error.message) || "").toLowerCase();
-  return (
-    message.includes("firebase admin is not configured") ||
-    message.includes("firebase-admin is not installed")
-  );
+  return message.includes("firebase admin is not configured") || message.includes("firebase-admin is not installed");
+}
+
+function collectEmailPassword(modeLabel) {
+  const email = window.prompt(`Enter email for ${modeLabel}:`, "") || "";
+  if (!email.trim()) return null;
+
+  const password = window.prompt(`Enter password for ${modeLabel}:`, "") || "";
+  if (!password) return null;
+
+  return { email: email.trim(), password };
 }
 
 async function signInWithGoogle() {
@@ -228,7 +255,7 @@ async function signInWithGoogle() {
   if (isSigningIn) return;
 
   isSigningIn = true;
-  setLoginButtonState({ busy: true, text: "Signing in..." });
+  setAuthButtonsState({ busy: true, text: "Signing in..." });
 
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -245,7 +272,56 @@ async function signInWithGoogle() {
     }
 
     showToast(mapAuthErrorToMessage(error), "error");
-    setLoginButtonState({ busy: false });
+    setAuthButtonsState({ busy: false });
+  } finally {
+    isSigningIn = false;
+  }
+}
+
+async function signInWithEmailPassword() {
+  if (!auth) {
+    showToast("Email login is unavailable in this environment.", "error");
+    return;
+  }
+  if (isSigningIn) return;
+
+  const creds = collectEmailPassword("login");
+  if (!creds) return;
+
+  isSigningIn = true;
+  setAuthButtonsState({ busy: true, text: "Signing in..." });
+
+  try {
+    await signInWithEmailAndPassword(auth, creds.email, creds.password);
+  } catch (error) {
+    console.error("Email sign-in failed:", error.code, error.message);
+    showToast(mapAuthErrorToMessage(error), "error");
+    setAuthButtonsState({ busy: false });
+  } finally {
+    isSigningIn = false;
+  }
+}
+
+async function registerWithEmailPassword() {
+  if (!auth) {
+    showToast("Email registration is unavailable in this environment.", "error");
+    return;
+  }
+  if (isSigningIn) return;
+
+  const creds = collectEmailPassword("registration");
+  if (!creds) return;
+
+  isSigningIn = true;
+  setAuthButtonsState({ busy: true, text: "Creating account..." });
+
+  try {
+    await createUserWithEmailAndPassword(auth, creds.email, creds.password);
+    showToast("Account created and signed in.", "success");
+  } catch (error) {
+    console.error("Email registration failed:", error.code, error.message);
+    showToast(mapAuthErrorToMessage(error), "error");
+    setAuthButtonsState({ busy: false });
   } finally {
     isSigningIn = false;
   }
@@ -282,7 +358,7 @@ async function initAnalytics(app) {
 
 async function syncBackendSession(user) {
   const token = await user.getIdToken();
-  const response = await postJson("/api/auth/google", { idToken: token });
+  const response = await postJson("/api/auth/firebase", { idToken: token });
   const email = response && response.user && response.user.email ? response.user.email : "";
   backendSessionEmail = String(email || "");
 }
@@ -292,22 +368,21 @@ async function initFirebaseAuth() {
 
   if (!cfg) {
     const loginBtn = document.getElementById("login-btn");
+    const emailLoginBtn = document.getElementById("email-login-btn");
+    const emailRegisterBtn = document.getElementById("email-register-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const userInfo = document.getElementById("user-info");
     const avatar = document.getElementById("user-avatar");
 
-    if (loginBtn) {
-      loginBtn.disabled = true;
-      loginBtn.textContent = "Guest Mode";
-      loginBtn.title = "Firebase auth is not configured";
-      loginBtn.classList.add("auth-disabled");
-    }
-    if (logoutBtn) {
-      logoutBtn.style.display = "none";
-    }
-    if (userInfo) {
-      userInfo.textContent = "Guest";
-    }
+    [loginBtn, emailLoginBtn, emailRegisterBtn].filter(Boolean).forEach((btn) => {
+      btn.disabled = true;
+      btn.classList.add("auth-disabled");
+      btn.title = "Firebase auth is not configured";
+    });
+
+    if (loginBtn) loginBtn.textContent = "Guest Mode";
+    if (logoutBtn) logoutBtn.style.display = "none";
+    if (userInfo) userInfo.textContent = "Guest";
     if (avatar) {
       avatar.textContent = "U";
       avatar.style.backgroundImage = "none";
@@ -366,11 +441,11 @@ async function initFirebaseAuth() {
 }
 
 window.signInWithGoogle = signInWithGoogle;
+window.signInWithEmailPassword = signInWithEmailPassword;
+window.registerWithEmailPassword = registerWithEmailPassword;
 window.logout = logout;
 window.showToast = showToast;
 
 document.addEventListener("DOMContentLoaded", () => {
   initFirebaseAuth();
 });
-
-

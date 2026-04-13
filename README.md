@@ -9,16 +9,18 @@ The project also provides a user-friendly web UI with pages for home, reorder te
 
 ## Features
 - Parsing-based sentence reordering using NLP dependency signals
+- Global-coherence reranking (local parse signals + transition coherence)
 - Baseline vs parsing comparison mode
 - Visual order-difference view (position-wise comparison)
 - Parsing logic preview cards (Subject, Verb, Object)
+- Robust preprocessing for noisy input (lists, semicolon blocks, multilingual punctuation)
 - REST APIs for sample generation and reordering
 - Web interface with:
   - Google sign-in flow (Firebase Authentication)
   - Reorder dashboard
   - History page for saved run results (server-side persistence)
   - Example and About pages
-- Reuters-based sample sentence sourcing (Reuters-21578 text corpus)
+- Reuters-based sample sentence sourcing (with open-domain fallback when Reuters is unavailable)
 
 ## Tech Stack
 - Backend: Python, Flask
@@ -31,7 +33,7 @@ The parsing-based approach follows these stages:
 
 1. Input preprocessing
 - Clean the text and split it into valid sentences.
-- Validate minimum sentence count (at least 3).
+- Validate minimum sentence count (at least 3) and allow larger batches (up to 80).
 
 2. Dependency parsing
 - Parse each sentence using spaCy.
@@ -150,7 +152,7 @@ Open in browser:
 - Parsing Logic Preview
 
 ## API Endpoints (Optional for Demo)
-- `GET /api/sample` - returns random Reuters dataset sample sentences only
+- `GET /api/sample` - returns random samples (`source=auto|dataset|open`)
 - `POST /api/reorder` - returns reordered output using `baseline`, `parser`, or `compare`
 - `POST /api/auth/google` - verifies Firebase Google ID token
 - `GET /api/auth/status` - returns current authentication state

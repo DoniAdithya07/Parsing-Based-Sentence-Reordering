@@ -13,7 +13,7 @@
   <section class="input-panel card reveal">
     <div class="card-header">
       <h2>Input</h2>
-      <p class="helper">Enter at least 3 sentences (one per line or as a paragraph).</p>
+      <p class="helper">Enter at least 3 sentences (one per line or as a paragraph). You can paste text from any source.</p>
     </div>
     {% if error %}
     <p class="error-text">{{ error }}</p>
@@ -32,7 +32,7 @@
       <div id="validation-message" class="validation-msg"></div>
       <p id="auth-required-msg" class="auth-required-msg" style="display:none;">Please login to use this feature</p>
     </form>
-    <p class="helper">Reuters-21578 is the only sample source. No non-dataset fallback samples are used.</p>
+    <p class="helper">Load Sample uses Reuters-21578 when available, and falls back to built-in open-domain text when Reuters data is unavailable.</p>
   </section>
 
   <section class="compare-grid reveal">
@@ -68,6 +68,87 @@
       <li><span class="step-pill">Step 3</span>Check the flow graph lines to track movement of each sentence.</li>
       <li><span class="step-pill">Step 4</span>Use parsing preview cards to inspect <strong>Subject, Verb, Object</strong> logic.</li>
     </ol>
+  </section>
+
+  <section class="card reveal capability-card">
+    <h3>Current Version Capability Coverage</h3>
+    <p class="helper">These are the core project goals currently active in this build.</p>
+    <div class="capability-grid">
+      {% for item in capability_rows %}
+      <article class="capability-item">
+        <div class="capability-head">
+          <p class="capability-title">{{ item.name }}</p>
+          <span class="status-badge status-on">{{ item.status }}</span>
+        </div>
+        <p class="capability-details">{{ item.details }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card reveal diagnostics-card">
+    <h3>Latest Run Diagnostics</h3>
+    <p class="helper">Use this panel during viva to explain what the pipeline actually did for the current run.</p>
+    {% if diagnostics.has_run %}
+    <div class="diagnostics-grid">
+      <div class="diag-row">
+        <span class="diag-label">Raw lines detected</span>
+        <span class="diag-value">{{ diagnostics.raw_line_count }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Clean sentences detected</span>
+        <span class="diag-value">{{ diagnostics.sentence_count }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Input had newlines</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.had_newlines else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Line-merge reconstruction applied</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.reconstructed_by_line_merge else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Malformed tokens seen</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.had_malformed_tokens else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Malformed tokens cleaned</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.cleaned_malformed_tokens else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Parsing applied</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.parsing_applied else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Parser engine mode</span>
+        <span class="diag-value">{{ diagnostics.parsing_engine_mode or "-" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">spaCy parse component available</span>
+        <span class="diag-value">
+          {% if diagnostics.parser_parse_component_available is none %}
+          -
+          {% else %}
+          {{ "Yes" if diagnostics.parser_parse_component_available else "No" }}
+          {% endif %}
+        </span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Parser fallback used</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.parser_fallback else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Baseline changed input order</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.baseline_reordered else "No" }}</span>
+      </div>
+      <div class="diag-row">
+        <span class="diag-label">Parsing changed input order</span>
+        <span class="diag-value">{{ "Yes" if diagnostics.parsing_reordered else "No" }}</span>
+      </div>
+    </div>
+    {% else %}
+    <p class="helper">No run yet. Submit input to populate diagnostics.</p>
+    {% endif %}
   </section>
 
   <section class="card reveal flow-visualization-card">
@@ -141,11 +222,12 @@
 <script id="run-payload" type="application/json">
   {{ {
     "method": selected_method,
-    "input_text": input_text,
+    "input_text": graph_input_text or input_text,
     "baseline_text": baseline_text,
     "parsing_text": parsing_text,
     "baseline_score": baseline_score,
-    "parsing_score": parsing_score
+    "parsing_score": parsing_score,
+    "diagnostics": diagnostics
   } | tojson }}
 </script>
 {% endif %}

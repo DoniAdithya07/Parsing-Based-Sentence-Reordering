@@ -94,12 +94,17 @@ function setupReorderForm() {
         const payload = await readJsonResponse(response);
         if (payload && typeof payload.text === "string" && payload.text.trim()) {
           textarea.value = payload.text;
-          if (validation) validation.textContent = "Loaded Reuters dataset sample.";
+          if (validation) {
+            validation.textContent =
+              payload.source === "dataset"
+                ? "Loaded Reuters dataset sample."
+                : "Loaded open-domain sample (non-dataset fallback).";
+          }
         } else {
-          if (validation) validation.textContent = "Dataset sample is unavailable right now.";
+          if (validation) validation.textContent = "Sample is unavailable right now.";
         }
       } catch (error) {
-        if (validation) validation.textContent = `Could not load Reuters dataset sample: ${error.message}`;
+        if (validation) validation.textContent = `Could not load sample: ${error.message}`;
       } finally {
         loadSampleBtn.textContent = original;
         loadSampleBtn.disabled = false;
@@ -251,15 +256,26 @@ function splitSentences(rawText) {
     .filter(Boolean);
 }
 
+function normalizeSentenceKey(text) {
+  return String(text || "")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function mapInputToOutput(inputSentences, outputSentences) {
   const buckets = new Map();
   outputSentences.forEach((sentence, index) => {
-    if (!buckets.has(sentence)) buckets.set(sentence, []);
-    buckets.get(sentence).push(index);
+    const key = normalizeSentenceKey(sentence);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(index);
   });
 
   return inputSentences.map((sentence) => {
-    const queue = buckets.get(sentence);
+    const key = normalizeSentenceKey(sentence);
+    const queue = buckets.get(key);
     if (!queue || !queue.length) return -1;
     return queue.shift();
   });

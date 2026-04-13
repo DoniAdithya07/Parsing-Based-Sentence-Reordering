@@ -391,6 +391,124 @@
         <li>Lightweight, fast, demo-ready system for academic use.</li>
       </ol>
     </article>
+
+    <article class="about-section card workflow-card">
+      <h3>4) Viva Quick Answers and Research Gap</h3>
+
+      <h4>What Is Parsing?</h4>
+      <p>Parsing is the process of analyzing sentence grammar structure: who is doing what to whom. In NLP, dependency parsing identifies relations like Subject, Verb, and Object.</p>
+
+      <h4>What Is Parse-Based Sentence Reordering?</h4>
+      <p>It is arranging shuffled sentences into a coherent order using syntactic and discourse signals from parsing, entity continuity, pronoun flow, and temporal cues.</p>
+
+      <h4>What Is a Heuristic?</h4>
+      <p>A heuristic is a practical rule-based scoring strategy that gives fast, explainable decisions without full model training.</p>
+
+      <h4>What We Are Building</h4>
+      <p>We are building a <strong>heuristic + NLP ranking system</strong> (rule-guided scoring with spaCy linguistic features), not a large end-to-end transformer trainer.</p>
+
+      <h4>Current System vs Trained Transformer Model</h4>
+      <div class="eval-table-wrap">
+        <table class="eval-table" aria-label="Heuristic and transformer comparison">
+          <thead>
+            <tr>
+              <th>Model Type</th>
+              <th>Strengths</th>
+              <th>Trade-offs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Our Current Heuristic + spaCy</td>
+              <td>Fast, explainable, low compute, no training required, easy debugging</td>
+              <td>Lower peak accuracy, manual tuning needed, weaker on deep discourse</td>
+            </tr>
+            <tr>
+              <td>BERT/Transformer Training</td>
+              <td>High accuracy, stronger global context modeling, better semantic capture</td>
+              <td>Needs large data, heavier compute, harder to explain in viva</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Most Related 3 Papers (to our direction)</h4>
+      <ul class="plain-list">
+        <li><strong>Topological Sort for Sentence Ordering (ACL 2020)</strong>: <a href="https://aclanthology.org/2020.acl-main.248/" target="_blank" rel="noopener noreferrer">Paper Link</a></li>
+        <li><strong>BERSON: BERT-enhanced Relational Sentence Ordering Network (EMNLP 2020)</strong>: <a href="https://aclanthology.org/2020.emnlp-main.511/" target="_blank" rel="noopener noreferrer">Paper Link</a></li>
+        <li><strong>STaCK: Sentence Ordering with Temporal Commonsense Knowledge (EMNLP 2021)</strong>: <a href="https://aclanthology.org/2021.emnlp-main.683/" target="_blank" rel="noopener noreferrer">Paper Link</a></li>
+      </ul>
+
+      <h4>Most Related Single Paper and Why</h4>
+      <p><strong>Topological Sort for Sentence Ordering (ACL 2020)</strong> is the most related single paper for our current project stage because it focuses on ordering quality and global consistency improvement without requiring a full heavy training pipeline for deployment.</p>
+
+      <h4>Research Gap in Lapata (2003)</h4>
+      <ul class="plain-list">
+        <li>Mainly local transitions (weak global discourse)</li>
+        <li>Independence assumptions simplify real linguistic dependencies</li>
+        <li>Greedy decoding can miss better global orders</li>
+        <li>Limited temporal/coreference/discourse reasoning</li>
+        <li>Evaluation mostly automatic ranking similarity</li>
+        <li>Domain transfer uncertainty</li>
+      </ul>
+
+      <h4>Common Limitations Across Modern Related Papers</h4>
+      <ul class="plain-list">
+        <li>Domain/data dependence on benchmark style</li>
+        <li>Scalability challenges as sentence count grows (often O(n^2))</li>
+        <li>Error propagation from pairwise/local decisions</li>
+        <li>Global coherence still approximated</li>
+        <li>High compute for BERT/graph rerank pipelines</li>
+        <li>Sensitivity to external knowledge source quality</li>
+        <li>Evaluation gap (automatic metrics more than strong human studies)</li>
+        <li>Limited robustness evidence on multilingual/very noisy OOD settings</li>
+      </ul>
+
+      <h4>Which Limitations Our Current Version Solves</h4>
+      <div class="eval-table-wrap">
+        <table class="eval-table" aria-label="Current version limitation coverage">
+          <thead>
+            <tr>
+              <th>Limitation</th>
+              <th>Status in Our Current Version</th>
+              <th>How</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Input reconstruction and cleaning reliability</td>
+              <td>Yes</td>
+              <td>Fragment merge + malformed token cleanup + diagnostics</td>
+            </tr>
+            <tr>
+              <td>Topic-aware and pronoun-aware ordering</td>
+              <td>Partially yes</td>
+              <td>Topic scoring, pronoun penalties, entity/subject continuity</td>
+            </tr>
+            <tr>
+              <td>Safe fallback on mixed-topic high-risk inputs</td>
+              <td>Yes</td>
+              <td>Reorder gating/independence detection and parser fallback</td>
+            </tr>
+            <tr>
+              <td>Explainability and speed</td>
+              <td>Yes</td>
+              <td>SVO cards + flow graph + lightweight heuristic scoring</td>
+            </tr>
+            <tr>
+              <td>Deep global discourse/pragmatics</td>
+              <td>Not fully</td>
+              <td>Needs discourse parser/transformer reranker in next phase</td>
+            </tr>
+            <tr>
+              <td>Cross-domain and multilingual robustness</td>
+              <td>Not fully</td>
+              <td>Requires broader training/evaluation datasets</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
   </section>
 </main>
 {% endblock %}

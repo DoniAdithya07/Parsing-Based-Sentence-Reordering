@@ -1,4 +1,5 @@
 import pytest
+import re
 
 import app as app_module
 
@@ -18,8 +19,6 @@ def client():
         "/about",
         "/history",
         "/dataset",
-        "/documentation",
-        "/guide",
         "/presentation",
     ],
 )
@@ -58,3 +57,18 @@ def test_history_has_history_mount_points(client):
     html = client.get("/history").get_data(as_text=True)
     assert 'id="history-list"' in html
     assert 'id="clear-history"' in html
+
+
+def test_reorder_payload_uses_normalized_input_for_graph(client):
+    resp = client.post(
+        "/reorder",
+        data={
+            "input_text": "Sentence one. Sentence two. Sentence three.",
+            "method": "baseline",
+        },
+    )
+    assert resp.status_code == 200
+
+    html = resp.get_data(as_text=True)
+    assert 'id="run-payload"' in html
+    assert re.search(r"Sentence one\.(\\n|\n)Sentence two\.(\\n|\n)Sentence three\.", html)

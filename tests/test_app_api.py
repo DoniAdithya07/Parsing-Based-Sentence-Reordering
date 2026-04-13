@@ -27,7 +27,7 @@ def client(monkeypatch):
 
 
 def test_main_routes_return_ok(client):
-    for path in ["/", "/reorder", "/about", "/history", "/dataset", "/documentation", "/guide", "/presentation"]:
+    for path in ["/", "/reorder", "/about", "/history", "/dataset", "/presentation"]:
         resp = client.get(path)
         assert resp.status_code == 200
 
@@ -44,6 +44,10 @@ def test_reorder_api_baseline(client):
     assert data["selected_method"] == "baseline"
     assert len(data["input_sentences"]) == 3
     assert len(data["baseline_output"]) == 3
+    assert data["parsing_applied"] is False
+    assert data["baseline_reordered"] in {True, False}
+    assert isinstance(data["input_diagnostics"], dict)
+    assert data["input_diagnostics"]["sentence_count"] == 3
 
 
 def test_reorder_api_parser_fallback_if_model_missing(client, monkeypatch):
@@ -64,6 +68,42 @@ def test_reorder_api_parser_fallback_if_model_missing(client, monkeypatch):
     assert data["parser_fallback"] is True
     assert data["parser_error"] == "spaCy model missing"
     assert len(data["parsing_output"]) == 3
+    assert data["parsing_applied"] is False
+
+
+def test_reorder_api_reconstructs_fragmented_lines(client):
+    payload = {
+        "text": (
+            "The talks broke down last June after\n"
+            "the two sides said they could not agree on the terms of the sale.\n"
+            "No decisions are likely until after Indonesia's elections on April 23, traders said.\n"
+            "A final review is expected next week."
+        ),
+        "method": "baseline",
+    }
+    resp = client.post("/api/reorder", json=payload)
+    data = resp.get_json()
+
+    assert resp.status_code == 200
+    assert len(data["input_sentences"]) == 3
+    assert data["input_sentences"][0].startswith("The talks broke down last June after the two sides")
+    assert data["input_diagnostics"]["reconstructed_by_line_merge"] is True
+
+
+def test_reorder_api_parser_reports_diagnostics(client):
+    payload = {
+        "text": "First, sentence one.\nThen sentence two.\nFinally, sentence three.",
+        "method": "parser",
+    }
+    resp = client.post("/api/reorder", json=payload)
+    data = resp.get_json()
+
+    assert resp.status_code == 200
+    assert data["selected_method"] == "parser"
+    assert data["parsing_applied"] is True
+    assert data["parsing_engine_mode"] in {"dependency_parser", "pos_tagger_only", "tokenizer_only"}
+    assert isinstance(data["parser_parse_component_available"], bool)
+    assert data["parsing_reordered"] in {True, False}
 
 
 def test_history_crud_api(client):
@@ -105,5 +145,45 @@ def test_api_auth_status_guest(client):
     assert resp.status_code == 200
     assert data["authenticated"] is False
     assert data["guest"] is True
+
+
+def test_sample_api_uses_open_fallback_when_dataset_unavailable(client, monkeypatch):
+    monkeypatch.setattr(app_module, "_REUTERS_CACHE", [])
+
+    def _raise_dataset_error(_limit=200):
+        raise RuntimeError("dataset unavailable")
+
+    monkeypatch.setattr(app_module, "load_reuters_sentences", _raise_dataset_error)
+
+    resp = client.get("/api/sample")
+    data = resp.get_json()
+
+    assert resp.status_code == 200
+    assert data["source"] == "open"
+    assert isinstance(data["sentences"], list)
+    assert len(data["sentences"]) >= 3
+
+
+def test_sample_api_dataset_mode_returns_503_when_dataset_unavailable(client, monkeypatch):
+    monkeypatch.setattr(app_module, "_REUTERS_CACHE", [])
+
+    def _raise_dataset_error(_limit=200):
+        raise RuntimeError("dataset unavailable")
+
+    monkeypatch.setattr(app_module, "load_reuters_sentences", _raise_dataset_error)
+
+    resp = client.get("/api/sample?source=dataset")
+    data = resp.get_json()
+
+    assert resp.status_code == 503
+    assert "error" in data
+
+
+def test_sample_api_rejects_invalid_source(client):
+    resp = client.get("/api/sample?source=invalid")
+    data = resp.get_json()
+
+    assert resp.status_code == 400
+    assert data["error"] == "Invalid source. Use auto, dataset, or open."
 
 
